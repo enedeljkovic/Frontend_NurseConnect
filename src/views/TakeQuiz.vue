@@ -1,0 +1,146 @@
+<template>
+  <div class="container my-5">
+    <div v-if="quiz" class="card shadow p-4">
+      <h2 class="mb-4 text-primary">{{ quiz.naziv }}</h2>
+
+      <form @submit.prevent="submitAnswers">
+        <div
+          v-for="(pitanje, index) in quiz.pitanja"
+          :key="index"
+          class="mb-4 border rounded p-3"
+        >
+          <p class="fw-bold">{{ index + 1 }}. {{ pitanje.question }}</p>
+
+          <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :id="`q${index}-o${i}`"
+              :value="opcija"
+              v-model="odgovori[index]"
+            />
+            <label class="form-check-label" :for="`q${index}-o${i}`">
+              {{ opcija }}
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 mt-3">
+          Pošalji odgovore
+        </button>
+      </form>
+
+      <div v-if="rezultat.length" class="mt-5">
+        <h4 class="text-info">Rezultati:</h4>
+        <ul class="list-group mt-3">
+          <li
+            v-for="(tocno, i) in rezultat"
+            :key="i"
+            class="list-group-item d-flex justify-content-between"
+            :class="tocno ? 'list-group-item-success' : 'list-group-item-danger'"
+          >
+            <span>Pitanje {{ i + 1 }}</span>
+            <strong>{{ tocno ? 'Točno' : 'Netočno' }}</strong>
+          </li>
+        </ul>
+        <p class="text-center mt-4 fw-bold">
+          ✅ Točno odgovoreno: {{ brojTocnih }}/{{ rezultat.length }} ({{ postotak }}%)
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+
+export default {
+  name: 'TakeQuiz',
+  setup() {
+    const route = useRoute();
+    const quiz = ref(null);
+    const odgovori = ref([]);
+    const rezultat = ref([]);
+
+    const fetchQuiz = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3001/quizzes/${route.params.id}`);
+        quiz.value = res.data;
+        odgovori.value = quiz.value.pitanja.map(() => []);
+      } catch (err) {
+        console.error('Greška pri dohvaćanju kviza:', err);
+      }
+    };
+
+    const submitAnswers = async () => {
+      try {
+        const res = await axios.post('http://localhost:3001/check-answers', {
+          kvizId: quiz.value.id,
+          odgovori: odgovori.value
+        });
+        rezultat.value = res.data.rezultat;
+      } catch (err) {
+        console.error('Greška pri slanju odgovora:', err);
+      }
+    };
+
+    const brojTocnih = computed(() => rezultat.value.filter(r => r === true).length);
+    const postotak = computed(() =>
+      rezultat.value.length
+        ? Math.round((brojTocnih.value / rezultat.value.length) * 100)
+        : 0
+    );
+
+    onMounted(fetchQuiz);
+
+    return {
+      quiz,
+      odgovori,
+      rezultat,
+      brojTocnih,
+      postotak,
+      submitAnswers
+    };
+  }
+};
+</script>
+
+
+<style scoped>
+.take-quiz-page {
+  max-width: 800px;
+  margin: auto;
+  padding: 2rem;
+  background-color: #fefefe;
+  border-radius: 10px;
+}
+
+.quiz-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #0077b6;
+}
+
+.question-card {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #d6e9f8;
+  border-radius: 10px;
+  background-color: #f0f9ff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.question-text {
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.results {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+</style>
