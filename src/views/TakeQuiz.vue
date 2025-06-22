@@ -9,19 +9,54 @@
           :key="index"
           class="mb-4 border rounded p-3"
         >
-          <p class="fw-bold">{{ index + 1 }}. {{ pitanje.question }}</p>
+          <p class="fw-bold">
+            {{ index + 1 }}.
+            <span v-if="pitanje.type !== 'image'">{{ pitanje.question }}</span>
+            <span v-else>Pitanje sa slikom</span>
+          </p>
 
-          <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :id="`q${index}-o${i}`"
-              :value="opcija"
-              v-model="odgovori[index]"
-            />
-            <label class="form-check-label" :for="`q${index}-o${i}`">
-              {{ opcija }}
-            </label>
+          <div v-if="pitanje.type === 'image' && pitanje.image" class="mb-3">
+            <img :src="pitanje.image" alt="Slika pitanja" class="img-fluid rounded shadow" style="max-width: 400px;" />
+          </div>
+
+          <!-- Višestruki odabir -->
+          <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
+            <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :id="`q${index}-o${i}`"
+                :value="opcija"
+                v-model="odgovori[index]"
+              />
+              <label class="form-check-label" :for="`q${index}-o${i}`">
+                {{ opcija }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Točno/Netočno -->
+          <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                :id="`q${index}-t`"
+                value="T"
+                v-model="odgovori[index]"
+              />
+              <label class="form-check-label" :for="`q${index}-t`">Točno</label>
+            </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                :id="`q${index}-n`"
+                value="N"
+                v-model="odgovori[index]"
+              />
+              <label class="form-check-label" :for="`q${index}-n`">Netočno</label>
+            </div>
           </div>
         </div>
 
@@ -30,6 +65,7 @@
         </button>
       </form>
 
+      <!-- Rezultati -->
       <div v-if="rezultat.length" class="mt-5">
         <h4 class="text-info">Rezultati:</h4>
         <ul class="list-group mt-3">
@@ -68,7 +104,9 @@ export default {
       try {
         const res = await axios.get(`http://localhost:3001/quizzes/${route.params.id}`);
         quiz.value = res.data;
-        odgovori.value = quiz.value.pitanja.map(() => []);
+        odgovori.value = quiz.value.pitanja.map(p =>
+          p.type === 'truefalse' ? '' : []
+        );
       } catch (err) {
         console.error('Greška pri dohvaćanju kviza:', err);
       }
@@ -76,8 +114,7 @@ export default {
 
     const submitAnswers = async () => {
       try {
-        const res = await axios.post('http://localhost:3001/check-answers', {
-          kvizId: quiz.value.id,
+        const res = await axios.post(`http://localhost:3001/quizzes/${quiz.value.id}/check-answers`, {
           odgovori: odgovori.value
         });
         rezultat.value = res.data.rezultat;
@@ -106,6 +143,10 @@ export default {
   }
 };
 </script>
+
+
+
+
 
 
 <style scoped>

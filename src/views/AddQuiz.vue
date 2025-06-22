@@ -1,121 +1,147 @@
 <template>
-  <div class="add-quiz-page">
-    <h2>Dodaj novi kviz</h2>
+  <div class="container my-5">
+    <h2 class="mb-4 text-primary">📝 Dodaj novi kviz</h2>
 
-    <input v-model="quizTitle" type="text" placeholder="Naziv kviza" class="input-title" />
-
-    <div v-for="(pitanje, index) in pitanja" :key="index" class="pitanje-blok">
-      <input v-model="pitanje.tekst" type="text" placeholder="Unesi pitanje" class="input-question" />
-
-      <div
-        v-for="(odgovor, i) in pitanje.odgovori"
-        :key="i"
-        class="odgovor-red"
-      >
-        <input
-          v-model="pitanje.odgovori[i]"
-          type="text"
-          placeholder="Odgovor"
-          class="input-odgovor"
-        />
-        <label>
-          <input
-            type="checkbox"
-            :value="odgovor"
-            v-model="pitanje.tocniOdgovori"
-          />
-          Točan
-        </label>
-        <button class="btn-remove" @click="ukloniOdgovor(index, i)">×</button>
+    <form @submit.prevent="spremiKviz">
+      <div class="mb-3">
+        <label class="form-label">Naziv kviza</label>
+        <input v-model="naziv" type="text" class="form-control" placeholder="Npr. Anatomija 1" required />
       </div>
 
-      <button class="btn-secondary" @click="dodajOdgovor(index)">+ Dodaj odgovor</button>
-      <button class="btn-remove-pitanje" @click="ukloniPitanje(index)">Ukloni pitanje</button>
-    </div>
+      <div v-for="(pitanje, index) in pitanja" :key="index" class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Pitanje {{ index + 1 }}</h5>
 
-    <button class="btn-secondary" @click="dodajPitanje">+ Dodaj pitanje</button>
-    <button class="btn-primary" @click="spremiKviz">Spremi kviz</button>
+          <div class="mb-3">
+            <label class="form-label">Vrsta pitanja</label>
+            <select v-model="pitanje.type" class="form-select">
+              <option value="multiple">Višestruki odabir</option>
+              <option value="truefalse">Točno / Netočno</option>
+              <option value="image">Pitanje sa slikom</option>
+            </select>
+          </div>
 
-    <p v-if="poruka" class="poruka">{{ poruka }}</p>
+          <!-- Tekst pitanja (ako nije image) -->
+          <div class="mb-3" v-if="pitanje.type !== 'image'">
+            <label class="form-label">Tekst pitanja</label>
+            <input v-model="pitanje.question" type="text" class="form-control" required />
+          </div>
+
+          <!-- Upload slike -->
+          <div class="mb-3" v-if="pitanje.type === 'image'">
+            <label class="form-label">Dodaj sliku</label>
+            <input type="file" accept="image/*" class="form-control" @change="handleImageUpload($event, index)" />
+            <div v-if="pitanje.imagePreview" class="mt-2">
+              <img :src="pitanje.imagePreview" class="img-thumbnail" style="max-width: 300px;" />
+            </div>
+          </div>
+
+          <!-- Višestruki odabir -->
+          <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
+            <label class="form-label">Odgovori</label>
+            <div v-for="(opcija, i) in pitanje.options" :key="i" class="input-group mb-2">
+              <input v-model="pitanje.options[i]" type="text" class="form-control" />
+              <button type="button" class="btn btn-outline-danger" @click="removeOption(index, i)">🗑</button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-2" @click="addOption(index)">+ Dodaj opciju</button>
+
+            <div class="mb-2">
+              <label class="form-label">Točni odgovori</label>
+              <select v-model="pitanje.correct" multiple class="form-select">
+                <option v-for="(opcija, i) in pitanje.options" :key="i" :value="opcija">{{ opcija }}</option>
+              </select>
+              <small class="text-muted">Možete odabrati više točnih odgovora</small>
+            </div>
+          </div>
+
+          <!-- True/False -->
+          <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
+            <label class="form-label">Točan odgovor</label>
+            <div class="form-check">
+              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="'t' + index" value="T" />
+              <label class="form-check-label" :for="'t' + index">Točno</label>
+            </div>
+            <div class="form-check">
+              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="'n' + index" value="N" />
+              <label class="form-check-label" :for="'n' + index">Netočno</label>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-danger mt-3" @click="removePitanje(index)">Ukloni pitanje</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-outline-primary mt-2" @click="addPitanje">+ Dodaj pitanje</button>
+      <button type="submit" class="btn btn-success w-100 mt-4">✅ Spremi kviz</button>
+    </form>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import { ref } from 'vue';
 
 export default {
   name: 'AddQuiz',
-  setup() {
-    const quizTitle = ref('');
-    const pitanja = ref([
-      {
-        tekst: '',
-        odgovori: [''],
-        tocniOdgovori: [],
-      },
-    ]);
-    const poruka = ref('');
-
-    const dodajPitanje = () => {
-      pitanja.value.push({
-        tekst: '',
-        odgovori: [''],
-        tocniOdgovori: [],
-      });
-    };
-
-    const dodajOdgovor = (index) => {
-      pitanja.value[index].odgovori.push('');
-    };
-
-    const ukloniOdgovor = (pitanjeIndex, odgovorIndex) => {
-      const p = pitanja.value[pitanjeIndex];
-      const odgovor = p.odgovori[odgovorIndex];
-      p.odgovori.splice(odgovorIndex, 1);
-      p.tocniOdgovori = p.tocniOdgovori.filter(o => o !== odgovor);
-    };
-
-    const ukloniPitanje = (index) => {
-      pitanja.value.splice(index, 1);
-    };
-
-    const spremiKviz = async () => {
-      const formatiranKviz = {
-        naziv: quizTitle.value,
-        pitanja: pitanja.value.map(p => ({
-          question: p.tekst,
-          options: p.odgovori,
-          correct: [...p.tocniOdgovori],
-        }))
-      };
-
-      try {
-        await axios.post('http://localhost:3001/quizzes', formatiranKviz);
-        poruka.value = 'Kviz uspješno spremljen!';
-        quizTitle.value = '';
-        pitanja.value = [
-          {
-            tekst: '',
-            odgovori: [''],
-            tocniOdgovori: [],
-          },
-        ];
-      } catch (err) {
-        poruka.value = 'Greška pri spremanju kviza.';
-        console.error(err);
-      }
-    };
-
+  data() {
     return {
-      quizTitle, pitanja, poruka,
-      dodajPitanje, dodajOdgovor,
-      ukloniOdgovor, ukloniPitanje,
-      spremiKviz
+      naziv: '',
+      pitanja: []
     };
   },
+  methods: {
+    addPitanje() {
+      this.pitanja.push({
+        question: '',
+        type: 'multiple',
+        options: [''],
+        correct: [],
+        image: '',
+        imagePreview: ''
+      });
+    },
+    removePitanje(index) {
+      this.pitanja.splice(index, 1);
+    },
+    addOption(qIndex) {
+      this.pitanja[qIndex].options.push('');
+    },
+    removeOption(qIndex, oIndex) {
+      this.pitanja[qIndex].options.splice(oIndex, 1);
+    },
+    handleImageUpload(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.pitanja[index].image = e.target.result;
+        this.pitanja[index].imagePreview = e.target.result;
+        this.pitanja[index].question = 'Pogledaj sliku i odgovori';
+      };
+      reader.readAsDataURL(file);
+    },
+    async spremiKviz() {
+      try {
+        await axios.post('http://localhost:3001/quizzes', {
+          naziv: this.naziv,
+          pitanja: this.pitanja
+        });
+        alert('✅ Kviz uspješno spremljen!');
+        this.naziv = '';
+        this.pitanja = [];
+      } catch (err) {
+        console.error('Greška pri spremanju kviza:', err);
+        alert('❌ Došlo je do greške.');
+      }
+    }
+  }
 };
 </script>
+
+
+
+
+
 
 <style scoped>
 .add-quiz-page {
