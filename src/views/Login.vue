@@ -22,6 +22,11 @@
       <p class="switch-mode" @click="toggleMode">
         {{ isProfesor ? 'Prijava kao učenik' : 'Prijava kao profesor' }}
       </p>
+
+      <!-- Novi dodatak za admin login -->
+      <p class="admin-login" @click="goToAdminLogin">
+        🔐 Prijava kao admin
+      </p>
     </div>
   </div>
 </template>
@@ -43,7 +48,10 @@ export default {
     const handleLogin = async () => {
       error.value = '';
       try {
-        const url = isProfesor.value ? 'http://localhost:3001/login-profesor' : 'http://localhost:3001/login';
+        const url = isProfesor.value
+          ? 'http://localhost:3001/login-profesor'
+          : 'http://localhost:3001/login';
+
         const response = await axios.post(url, { kod: kod.value });
 
         const korisnik = isProfesor.value ? response.data.profesor : response.data.student;
@@ -65,7 +73,19 @@ export default {
       isProfesor.value = !isProfesor.value;
     };
 
-    return { email, kod, handleLogin, error, isProfesor, toggleMode };
+    const goToAdminLogin = () => {
+      router.push('/admin-login');
+    };
+
+    return {
+      email,
+      kod,
+      handleLogin,
+      error,
+      isProfesor,
+      toggleMode,
+      goToAdminLogin
+    };
   }
 };
 </script>
@@ -75,27 +95,29 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: #e0f7fa;
+  min-height: 100vh;
+  background: #f4f9ff;
 }
 
 .login-box {
   background: white;
   padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
   text-align: center;
 }
 
 .login-box h1 {
-  margin-bottom: 0.2rem;
-  color: #0077B6;
+  margin-bottom: 0.5rem;
+  color: #0077cc;
 }
 
 .tagline {
-  color: #3B9A57;
+  font-size: 0.9rem;
   margin-bottom: 1.5rem;
+  color: #555;
 }
 
 .form-group {
@@ -103,44 +125,45 @@ export default {
   text-align: left;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-weight: bold;
-}
-
-.form-group input {
+input {
   width: 100%;
   padding: 0.6rem;
   border: 1px solid #ccc;
-  border-radius: 0.5rem;
+  border-radius: 6px;
 }
 
 button {
-  background-color: #0077B6;
-  color: white;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
   width: 100%;
-  font-size: 1rem;
+  padding: 0.6rem;
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
   cursor: pointer;
 }
 
 button:hover {
-  background-color: #005f8a;
+  background-color: #005fa3;
+}
+
+.switch-mode,
+.admin-login {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #0077cc;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.switch-mode:hover,
+.admin-login:hover {
+  color: #005fa3;
 }
 
 .error {
   margin-top: 1rem;
   color: red;
-}
-
-.switch-mode {
-  margin-top: 1rem;
-  color: #0077B6;
-  cursor: pointer;
-  font-size: 0.9rem;
-  text-decoration: underline;
+  font-weight: bold;
 }
 </style>

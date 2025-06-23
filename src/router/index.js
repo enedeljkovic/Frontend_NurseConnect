@@ -10,6 +10,8 @@ import Settings from '../views/Settings.vue';
 import SubjectMaterials from '../views/SubjectMaterials.vue';
 import MaterialDetails from '../views/MaterialDetails.vue';
 import SubjectQuizzes from '../views/SubjectQuizzes.vue';
+import AdminLogin from '../views/AdminLogin.vue';
+import AdminStudents from '../views/AdminStudents.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -23,7 +25,11 @@ const routes = [
   { path: '/quizzes/:id', name: 'TakeQuiz', component: TakeQuiz },
   { path: '/quizzes-subject/:subject', name: 'SubjectQuizzes', component: SubjectQuizzes },
   { path: '/settings', name: 'Settings', component: Settings },
-  { path: '/materials/:id', name: 'MaterialDetails', component: MaterialDetails }
+  { path: '/materials/:id', name: 'MaterialDetails', component: MaterialDetails },
+  { path: '/admin-login', name: 'AdminLogin', component: AdminLogin },
+  { path: '/admin-panel', name: 'AdminPanel', component: () => import('../views/AdminPanel.vue') },
+  { path: '/admin/students', name: 'AdminStudents', component: () => import('../views/AdminStudents.vue') },
+  { path: '/admin/materials', name: 'AdminMaterials',component: () => import('../views/AdminMaterials.vue')}
   
 ];
 
