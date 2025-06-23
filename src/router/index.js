@@ -9,6 +9,7 @@ import TakeQuiz from '../views/TakeQuiz.vue';
 import Settings from '../views/Settings.vue';
 import SubjectMaterials from '../views/SubjectMaterials.vue';
 import MaterialDetails from '../views/MaterialDetails.vue';
+import SubjectQuizzes from '../views/SubjectQuizzes.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -20,8 +21,10 @@ const routes = [
   { path: '/profile', name: 'Profile', component: Profile },
   { path: '/add-quiz', name: 'AddQuiz', component: AddQuiz },
   { path: '/quizzes/:id', name: 'TakeQuiz', component: TakeQuiz },
+  { path: '/quizzes-subject/:subject', name: 'SubjectQuizzes', component: SubjectQuizzes },
   { path: '/settings', name: 'Settings', component: Settings },
   { path: '/materials/:id', name: 'MaterialDetails', component: MaterialDetails }
+  
 ];
 
 const router = createRouter({

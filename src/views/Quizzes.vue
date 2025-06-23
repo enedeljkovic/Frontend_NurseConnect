@@ -1,125 +1,149 @@
 <template>
-  <div class="quizzes-page">
-    <div class="header">
-      <h2>Kvizovi</h2>
-      <!-- Gumb za dodavanje kviza samo za profesore -->
-      <button v-if="isProfesor" @click="goToAddQuiz">+ Dodaj kviz</button>
-    </div>
+  <div class="container my-5">
+    <h2 class="text-center mb-5 text-primary">🧠 Kvizovi po predmetima</h2>
 
-    <div v-if="quizzes.length === 0" class="no-quizzes">
-      Trenutno nema dostupnih kvizova.
-    </div>
-
-    <ul v-else class="quiz-list">
-      <li v-for="quiz in quizzes" :key="quiz.id" class="quiz-item">
-        <div class="quiz-info">
-          <h3>{{ quiz.naziv }}</h3>
-          <p>{{ quiz.pitanja.length }} pitanja</p>
+    <!-- Odabir predmeta -->
+    <div v-if="!selectedSubject" class="row g-4">
+      <div
+        v-for="predmet in predmeti"
+        :key="predmet"
+        class="col-12 col-md-6 col-lg-4"
+      >
+        <div class="card predmet-card shadow h-100" @click="selectSubject(predmet)">
+          <div class="card-body text-center d-flex flex-column justify-content-center">
+            <h5 class="card-title fw-bold text-secondary">{{ predmet }}</h5>
+          </div>
         </div>
-        <button class="solve-btn" @click="goToQuiz(quiz.id)">Riješi kviz</button>
-      </li>
-    </ul>
+      </div>
+    </div>
+
+    <!-- Kvizovi za odabrani predmet -->
+    <div v-else>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-success">{{ selectedSubject }}</h3>
+        <div>
+          <button
+            v-if="isProfesor"
+            class="btn btn-primary me-2"
+            @click="goToAddQuiz(selectedSubject)"
+          >
+            + Dodaj kviz
+          </button>
+          <button class="btn btn-outline-secondary" @click="selectedSubject = null">
+            ⬅ Natrag
+          </button>
+        </div>
+      </div>
+
+      <div v-if="quizzes.length === 0" class="alert alert-warning text-center">
+        📭 Nema kvizova za ovaj predmet.
+      </div>
+
+      <div class="row g-4">
+        <div
+          v-for="quiz in quizzes"
+          :key="quiz.id"
+          class="col-md-6"
+        >
+          <div class="card quiz-card shadow-sm h-100">
+            <div class="card-body d-flex flex-column justify-content-between">
+              <div>
+                <h5 class="card-title text-dark fw-bold">{{ quiz.naziv }}</h5>
+                <p class="text-muted">{{ quiz.pitanja.length }} pitanja</p>
+              </div>
+              <button class="btn btn-outline-success mt-3" @click="goToQuiz(quiz.id)">
+                ▶ Riješi kviz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
   name: 'Quizzes',
   setup() {
+    const predmeti = [
+      'Psihologija',
+      'Načela poučavanja',
+      'Etika u sestrinstvu',
+      'Anatomija i fiziologija',
+      'Bakteriologija, virologija i parazitologija',
+      'Biokemija',
+      'Opća načela zdravlja i njege',
+      'Zdravstvena njega - opća',
+      'Zdravstvena njega zdravog djeteta i adolescenta',
+      'Osnove fizikalne i radne terapije (izborni)',
+      'Profesionalna komunikacija u sestrinstvu (izborni)',
+      'Sat razrednika'
+    ];
+
     const quizzes = ref([]);
+    const selectedSubject = ref(null);
     const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
     const router = useRouter();
 
-    const fetchQuizzes = async () => {
+    const fetchQuizzesForSubject = async (predmet) => {
       try {
-        const res = await axios.get('http://localhost:3001/quizzes');
+        const res = await axios.get(`http://localhost:3001/quizzes/subject/${encodeURIComponent(predmet)}`);
         quizzes.value = res.data;
       } catch (error) {
         console.error('Greška pri dohvaćanju kvizova:', error);
       }
     };
 
-    const goToAddQuiz = () => {
-      router.push('/add-quiz');
+    const selectSubject = (predmet) => {
+      selectedSubject.value = predmet;
+      fetchQuizzesForSubject(predmet);
+    };
+
+    const goToAddQuiz = (predmet) => {
+      router.push({ name: 'AddQuiz', query: { predmet } });
     };
 
     const goToQuiz = (id) => {
       router.push(`/quizzes/${id}`);
     };
 
-    onMounted(fetchQuizzes);
-
-    return { quizzes, goToAddQuiz, goToQuiz, isProfesor };
+    return {
+      predmeti,
+      selectedSubject,
+      quizzes,
+      isProfesor,
+      selectSubject,
+      goToAddQuiz,
+      goToQuiz
+    };
   }
 };
 </script>
 
 <style scoped>
-.quizzes-page {
-  max-width: 800px;
-  margin: auto;
-  padding: 1rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.header h2 {
-  color: #0077B6;
-}
-
-.header button {
-  background-color: #0077B6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
+.predmet-card {
   cursor: pointer;
+  border: 2px solid #dce3ea;
+  transition: 0.3s ease;
+  border-radius: 12px;
+}
+.predmet-card:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.03);
+  border-color: #0d6efd;
 }
 
-.header button:hover {
-  background-color: #005f8a;
+.quiz-card {
+  border-radius: 12px;
+  transition: 0.3s ease;
 }
-
-.no-quizzes {
-  text-align: center;
-  color: #999;
-}
-
-.quiz-list {
-  list-style: none;
-  padding: 0;
-}
-
-.quiz-item {
-  background-color: #f0f9ff;
-  padding: 1rem;
-  border-radius: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.solve-btn {
-  background-color: #3B9A57;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-
-.solve-btn:hover {
-  background-color: #2f7b45;
+.quiz-card:hover {
+  transform: scale(1.02);
+  background-color: #f5fcff;
 }
 </style>

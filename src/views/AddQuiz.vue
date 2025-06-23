@@ -1,6 +1,7 @@
 <template>
   <div class="container my-5">
-    <h2 class="mb-4 text-primary">📝 Dodaj novi kviz</h2>
+    <h2 class="mb-2 text-primary">📝 Dodaj novi kviz</h2>
+    <h5 class="mb-4 text-muted">Predmet: {{ predmet }}</h5>
 
     <form @submit.prevent="spremiKviz">
       <div class="mb-3">
@@ -21,7 +22,7 @@
             </select>
           </div>
 
-          <!-- Tekst pitanja (ako nije image) -->
+          <!-- Tekst pitanja -->
           <div class="mb-3" v-if="pitanje.type !== 'image'">
             <label class="form-label">Tekst pitanja</label>
             <input v-model="pitanje.question" type="text" class="form-control" required />
@@ -79,18 +80,22 @@
 
 <script>
 import axios from 'axios';
+import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+
 
 export default {
   name: 'AddQuiz',
-  data() {
-    return {
-      naziv: '',
-      pitanja: []
-    };
-  },
-  methods: {
-    addPitanje() {
-      this.pitanja.push({
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const predmet = route.query.predmet || 'Nepoznato';
+
+    const naziv = ref('');
+    const pitanja = ref([]);
+
+    const addPitanje = () => {
+      pitanja.value.push({
         question: '',
         type: 'multiple',
         options: [''],
@@ -98,49 +103,61 @@ export default {
         image: '',
         imagePreview: ''
       });
-    },
-    removePitanje(index) {
-      this.pitanja.splice(index, 1);
-    },
-    addOption(qIndex) {
-      this.pitanja[qIndex].options.push('');
-    },
-    removeOption(qIndex, oIndex) {
-      this.pitanja[qIndex].options.splice(oIndex, 1);
-    },
-    handleImageUpload(event, index) {
+    };
+
+    const removePitanje = (index) => {
+      pitanja.value.splice(index, 1);
+    };
+
+    const addOption = (qIndex) => {
+      pitanja.value[qIndex].options.push('');
+    };
+
+    const removeOption = (qIndex, oIndex) => {
+      pitanja.value[qIndex].options.splice(oIndex, 1);
+    };
+
+    const handleImageUpload = (event, index) => {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        this.pitanja[index].image = e.target.result;
-        this.pitanja[index].imagePreview = e.target.result;
-        this.pitanja[index].question = 'Pogledaj sliku i odgovori';
+        pitanja.value[index].image = e.target.result;
+        pitanja.value[index].imagePreview = e.target.result;
+        pitanja.value[index].question = 'Pogledaj sliku i odgovori';
       };
       reader.readAsDataURL(file);
-    },
-    async spremiKviz() {
+    };
+
+    const spremiKviz = async () => {
       try {
         await axios.post('http://localhost:3001/quizzes', {
-          naziv: this.naziv,
-          pitanja: this.pitanja
+          naziv: naziv.value,
+          pitanja: pitanja.value,
+          predmet
         });
-        alert('✅ Kviz uspješno spremljen!');
-        this.naziv = '';
-        this.pitanja = [];
+        router.push('/quizzes');
       } catch (err) {
         console.error('Greška pri spremanju kviza:', err);
         alert('❌ Došlo je do greške.');
       }
-    }
+    };
+
+    return {
+      naziv,
+      pitanja,
+      predmet,
+      addPitanje,
+      removePitanje,
+      addOption,
+      removeOption,
+      handleImageUpload,
+      spremiKviz
+    };
   }
 };
 </script>
-
-
-
-
 
 
 <style scoped>
