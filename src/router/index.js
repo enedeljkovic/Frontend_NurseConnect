@@ -29,7 +29,9 @@ const routes = [
   { path: '/admin-login', name: 'AdminLogin', component: AdminLogin },
   { path: '/admin-panel', name: 'AdminPanel', component: () => import('../views/AdminPanel.vue') },
   { path: '/admin/students', name: 'AdminStudents', component: () => import('../views/AdminStudents.vue') },
-  { path: '/admin/materials', name: 'AdminMaterials',component: () => import('../views/AdminMaterials.vue')}
+  { path: '/admin/materials', name: 'AdminMaterials',component: () => import('../views/AdminMaterials.vue')},
+  { path: '/admin/quizzes', name: 'AdminQuizzes', component: () => import('../views/AdminQuizzes.vue') }
+
   
 ];
 
