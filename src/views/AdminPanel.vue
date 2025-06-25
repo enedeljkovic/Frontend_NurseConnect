@@ -38,6 +38,16 @@ export default {
         title: '📝 Upravljanje kvizovima',
         description: 'Uredi ili izbriši kvizove',
         route: '/admin/quizzes'
+      },
+      {
+        title: '🧑‍🏫 Upravljanje profesorima',
+        description: 'Dodaj i poveži profesore s predmetima',
+        route: '/admin/professors'
+      },
+      {
+        title: '⚙️ Postavke',
+        description: 'Postavke sustava i profila (uskoro)',
+        route: '/admin/settings'
       }
     ];
 
@@ -49,6 +59,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .card:hover {

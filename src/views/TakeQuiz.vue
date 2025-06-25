@@ -4,11 +4,7 @@
       <h2 class="mb-4 text-primary">{{ quiz.naziv }}</h2>
 
       <form @submit.prevent="submitAnswers">
-        <div
-          v-for="(pitanje, index) in quiz.pitanja"
-          :key="index"
-          class="mb-4 border rounded p-3"
-        >
+        <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4 border rounded p-3">
           <p class="fw-bold">
             {{ index + 1 }}.
             <span v-if="pitanje.type !== 'image'">{{ pitanje.question }}</span>
@@ -19,7 +15,6 @@
             <img :src="pitanje.image" alt="Slika pitanja" class="img-fluid rounded shadow" style="max-width: 400px;" />
           </div>
 
-          <!-- Višestruki odabir -->
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
             <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
               <input
@@ -29,43 +24,25 @@
                 :value="opcija"
                 v-model="odgovori[index]"
               />
-              <label class="form-check-label" :for="`q${index}-o${i}`">
-                {{ opcija }}
-              </label>
+              <label class="form-check-label" :for="`q${index}-o${i}`">{{ opcija }}</label>
             </div>
           </div>
 
-          <!-- Točno/Netočno -->
           <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
             <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                :id="`q${index}-t`"
-                value="T"
-                v-model="odgovori[index]"
-              />
+              <input class="form-check-input" type="radio" :id="`q${index}-t`" value="T" v-model="odgovori[index]" />
               <label class="form-check-label" :for="`q${index}-t`">Točno</label>
             </div>
             <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                :id="`q${index}-n`"
-                value="N"
-                v-model="odgovori[index]"
-              />
+              <input class="form-check-input" type="radio" :id="`q${index}-n`" value="N" v-model="odgovori[index]" />
               <label class="form-check-label" :for="`q${index}-n`">Netočno</label>
             </div>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-success w-100 mt-3">
-          Pošalji odgovore
-        </button>
+        <button type="submit" class="btn btn-success w-100 mt-3">Pošalji odgovore</button>
       </form>
 
-      <!-- Rezultati -->
       <div v-if="rezultat.length" class="mt-5">
         <h4 class="text-info">Rezultati:</h4>
         <ul class="list-group mt-3">
@@ -99,10 +76,15 @@ export default {
     const quiz = ref(null);
     const odgovori = ref([]);
     const rezultat = ref([]);
+    const quizId = Number(route.params.id);
 
     const fetchQuiz = async () => {
       try {
-        const res = await axios.get(`http://localhost:3001/quizzes/${route.params.id}`);
+        if (!quizId || isNaN(quizId)) {
+          console.error('Nevažeći ID kviza');
+          return;
+        }
+        const res = await axios.get(`http://localhost:3001/quizzes/${quizId}`);
         quiz.value = res.data;
         odgovori.value = quiz.value.pitanja.map(p =>
           p.type === 'truefalse' ? '' : []
@@ -114,8 +96,14 @@ export default {
 
     const submitAnswers = async () => {
       try {
-        const res = await axios.post(`http://localhost:3001/quizzes/${quiz.value.id}/check-answers`, {
-          odgovori: odgovori.value
+        const student = JSON.parse(localStorage.getItem('user'));
+        if (!quizId || isNaN(quizId)) {
+          console.error('Nevažeći ID kviza u submitu');
+          return;
+        }
+        const res = await axios.post(`http://localhost:3001/quizzes/${quizId}/check-answers`, {
+          odgovori: odgovori.value,
+          studentId: student.id
         });
         rezultat.value = res.data.rezultat;
       } catch (err) {
@@ -143,8 +131,6 @@ export default {
   }
 };
 </script>
-
-
 
 
 

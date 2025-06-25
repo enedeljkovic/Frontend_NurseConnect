@@ -9,8 +9,13 @@
         :key="predmet"
         class="col-12 col-md-6 col-lg-4"
       >
-        <div class="card predmet-card shadow h-100" @click="selectSubject(predmet)">
-          <div class="card-body text-center d-flex flex-column justify-content-center">
+        <div
+          class="card predmet-card shadow h-100"
+          @click="selectSubject(predmet)"
+        >
+          <div
+            class="card-body text-center d-flex flex-column justify-content-center"
+          >
             <h5 class="card-title fw-bold text-secondary">{{ predmet }}</h5>
           </div>
         </div>
@@ -23,7 +28,7 @@
         <h3 class="text-success">{{ selectedSubject }}</h3>
         <div>
           <button
-            v-if="isProfesor"
+            v-if="mozeDodatiKviz"
             class="btn btn-primary me-2"
             @click="goToAddQuiz(selectedSubject)"
           >
@@ -40,11 +45,7 @@
       </div>
 
       <div class="row g-4">
-        <div
-          v-for="quiz in quizzes"
-          :key="quiz.id"
-          class="col-md-6"
-        >
+        <div v-for="quiz in quizzes" :key="quiz.id" class="col-md-6">
           <div class="card quiz-card shadow-sm h-100">
             <div class="card-body d-flex flex-column justify-content-between">
               <div>
@@ -64,7 +65,7 @@
 
 <script>
 import axios from 'axios';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
@@ -87,8 +88,16 @@ export default {
 
     const quizzes = ref([]);
     const selectedSubject = ref(null);
-    const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
     const router = useRouter();
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
+    const profesorPredmeti = ref([]);
+
+    const mozeDodatiKviz = computed(() => {
+      if (!isProfesor.value || !selectedSubject.value) return false;
+      return profesorPredmeti.value.includes(selectedSubject.value);
+    });
 
     const fetchQuizzesForSubject = async (predmet) => {
       try {
@@ -96,6 +105,16 @@ export default {
         quizzes.value = res.data;
       } catch (error) {
         console.error('Greška pri dohvaćanju kvizova:', error);
+      }
+    };
+
+    const fetchProfesorPredmeti = async () => {
+      if (!user || !user.id) return;
+      try {
+        const res = await axios.get(`http://localhost:3001/profesori/${user.id}`);
+        profesorPredmeti.value = res.data.Subjects.map(s => s.naziv);
+      } catch (err) {
+        console.error('Greška pri dohvaćanju predmeta profesora:', err);
       }
     };
 
@@ -112,11 +131,16 @@ export default {
       router.push(`/quizzes/${id}`);
     };
 
+    if (isProfesor.value) {
+      fetchProfesorPredmeti();
+    }
+
     return {
       predmeti,
-      selectedSubject,
       quizzes,
+      selectedSubject,
       isProfesor,
+      mozeDodatiKviz,
       selectSubject,
       goToAddQuiz,
       goToQuiz
@@ -124,6 +148,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .predmet-card {

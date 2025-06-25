@@ -12,6 +12,8 @@ import MaterialDetails from '../views/MaterialDetails.vue';
 import SubjectQuizzes from '../views/SubjectQuizzes.vue';
 import AdminLogin from '../views/AdminLogin.vue';
 import AdminStudents from '../views/AdminStudents.vue';
+import AddMaterial from '../views/AddMaterial.vue';
+
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -30,7 +32,13 @@ const routes = [
   { path: '/admin-panel', name: 'AdminPanel', component: () => import('../views/AdminPanel.vue') },
   { path: '/admin/students', name: 'AdminStudents', component: () => import('../views/AdminStudents.vue') },
   { path: '/admin/materials', name: 'AdminMaterials',component: () => import('../views/AdminMaterials.vue')},
-  { path: '/admin/quizzes', name: 'AdminQuizzes', component: () => import('../views/AdminQuizzes.vue') }
+  { path: '/admin/quizzes', name: 'AdminQuizzes', component: () => import('../views/AdminQuizzes.vue') },
+  { path: '/admin/professors', name: 'AdminProfessors', component: () => import('../views/AdminProfessors.vue') },
+  { path: '/admin/settings', name: 'AdminSettings', component: () => import('../views/AdminSettings.vue') },
+  { path: '/add-material', name: 'AddMaterial', component: () => import('../views/AddMaterial.vue') },
+
+
+
 
   
 ];

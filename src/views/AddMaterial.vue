@@ -1,26 +1,32 @@
 <template>
-  <div class="add-material">
-    <h2>Dodaj novi materijal</h2>
+  <div class="container my-5">
+    <router-link :to="{ name: 'SubjectMaterials', params: { predmet } }" class="btn btn-outline-secondary mb-3">
+      ⬅ Natrag na materijale
+    </router-link>
+    <h2 class="text-primary mb-4">Dodaj novi materijal za predmet: {{ predmet }}</h2>
 
-    <form @submit.prevent="dodajMaterijal" class="material-form">
-      <input v-model="naziv" type="text" placeholder="Naziv materijala" required />
-      <textarea v-model="opis" placeholder="Opis materijala" required></textarea>
-      <input v-model="imageUrl" type="text" placeholder="URL slike (opcionalno)" />
+    <form @submit.prevent="submitMaterial" class="bg-white p-4 shadow rounded">
+      <div class="mb-3">
+        <label class="form-label">Naziv materijala</label>
+        <input v-model="naziv" type="text" class="form-control" required />
+      </div>
 
-      <select v-model="subject" required>
-        <option disabled value="">Odaberi predmet</option>
-        <option v-for="predmet in predmeti" :key="predmet" :value="predmet">
-          {{ predmet }}
-        </option>
-      </select>
+      <div class="mb-3">
+        <label class="form-label">Opis materijala</label>
+        <textarea v-model="opis" class="form-control" required></textarea>
+      </div>
 
-      <input type="file" @change="handleFileUpload" accept=".pdf,.doc,.docx" />
+      <div class="mb-3">
+        <label class="form-label">Slika (opcionalno)</label>
+        <input v-model="imageUrl" type="text" class="form-control" />
+      </div>
 
-      <button type="submit">Dodaj materijal</button>
+      <div class="mb-3">
+        <label class="form-label">PDF datoteka</label>
+        <input type="file" @change="handleFile" class="form-control" accept=".pdf" />
+      </div>
 
-      <p v-if="fileUrl" class="upload-info">
-        📎 Datoteka spremljena: <a :href="fileUrl" target="_blank">Preuzmi</a>
-      </p>
+      <button type="submit" class="btn btn-primary w-100">✅ Dodaj materijal</button>
     </form>
   </div>
 </template>
@@ -28,88 +34,51 @@
 <script>
 import axios from 'axios';
 import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 export default {
   name: 'AddMaterial',
   setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const predmet = route.query.predmet || ''; // preuzmi iz upita
+
     const naziv = ref('');
     const opis = ref('');
     const imageUrl = ref('');
-    const subject = ref('');
     const file = ref(null);
-    const fileUrl = ref('');
 
-    const predmeti = [
-      'Psihologija',
-      'Načela poučavanja',
-      'Etika u sestrinstvu',
-      'Anatomija i fiziologija',
-      'Bakteriologija, virologija i parazitologija',
-      'Biokemija',
-      'Opća načela zdravlja i njege',
-      'Zdravstvena njega - opća',
-      'Zdravstvena njega zdravog djeteta i adolescenta',
-      'Osnove fizikalne i radne terapije (izborni)',
-      'Profesionalna komunikacija u sestrinstvu (izborni)',
-      'Sat razrednika'
-    ];
+    const handleFile = (e) => {
+      file.value = e.target.files[0];
+    };
 
-    const handleFileUpload = async (event) => {
-      file.value = event.target.files[0];
-      if (!file.value) return;
+    const submitMaterial = async () => {
+      let fileUrl = null;
 
-      const formData = new FormData();
-      formData.append('file', file.value);
+      if (file.value) {
+        const formData = new FormData();
+        formData.append('file', file.value);
 
-      try {
-        const response = await axios.post('http://localhost:3001/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          }
-        });
-        fileUrl.value = response.data.fileUrl;
-      } catch (error) {
-        console.error('Greška pri uploadu datoteke:', error);
+        const uploadRes = await axios.post('http://localhost:3001/upload', formData);
+        fileUrl = uploadRes.data.fileUrl;
       }
+
+      await axios.post('http://localhost:3001/materials', {
+        naziv: naziv.value,
+        opis: opis.value,
+        imageUrl: imageUrl.value,
+        fileUrl,
+        subject: predmet,
+      });
+
+      router.push({ name: 'SubjectMaterials', params: { predmet } });
     };
 
-    const dodajMaterijal = async () => {
-      try {
-        await axios.post('http://localhost:3001/materials', {
-          naziv: naziv.value,
-          opis: opis.value,
-          imageUrl: imageUrl.value || null,
-          fileUrl: fileUrl.value || null,
-          subject: subject.value
-        });
-
-        naziv.value = '';
-        opis.value = '';
-        imageUrl.value = '';
-        file.value = null;
-        fileUrl.value = '';
-        subject.value = '';
-
-        alert('Materijal uspješno dodan!');
-      } catch (err) {
-        console.error('Greška pri dodavanju materijala:', err);
-      }
-    };
-
-    return {
-      naziv,
-      opis,
-      imageUrl,
-      subject,
-      file,
-      fileUrl,
-      predmeti,
-      handleFileUpload,
-      dodajMaterijal
-    };
-  }
+    return { naziv, opis, imageUrl, file, predmet, handleFile, submitMaterial };
+  },
 };
 </script>
+
 
 <style scoped>
 .add-material {

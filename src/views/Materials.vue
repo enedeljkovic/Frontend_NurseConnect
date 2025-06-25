@@ -4,6 +4,7 @@
       <span class="back-icon">←</span> Natrag na početnu stranicu
     </router-link>
     <h2 class="section-title">📚 Odaberi predmet za pregled materijala</h2>
+
     <div class="subject-grid">
       <div
         v-for="predmet in predmeti"
@@ -42,8 +43,18 @@ export default {
     ];
 
     const openSubject = (predmet) => {
-      const path = `/materials/${encodeURIComponent(predmet)}`;
-      router.push(path);
+      const user = JSON.parse(localStorage.getItem('user'));
+      const isProfesor = localStorage.getItem('isProfesor') === 'true';
+      const profesorPredmeti = JSON.parse(localStorage.getItem('profesorPredmeti')) || [];
+
+      
+      if (isProfesor && profesorPredmeti.includes(predmet)) {
+        router.push({ name: 'AddMaterial', query: { predmet } });
+      } else {
+        
+        const path = `/materials/${encodeURIComponent(predmet)}`;
+        router.push(path);
+      }
     };
 
     return {
@@ -53,6 +64,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .materials-page {

@@ -1,121 +1,94 @@
 <template>
-  <div class="subject-materials">
-    <router-link to="/materials" class="back-button">← Natrag na predmete</router-link>
-    <h2 class="section-title">Materijali za predmet: {{ subject }}</h2>
+  <div class="container my-5">
+    <router-link to="/materials" class="btn btn-outline-secondary mb-4">⬅ Natrag na predmete</router-link>
+    <h2 class="text-primary mb-4">Materijali za predmet: {{ predmet }}</h2>
 
-    <div v-if="isProfesor">
-      <form @submit.prevent="dodajMaterijal" class="material-form">
-        <h3>Dodaj novi materijal</h3>
-        <input v-model="naziv" type="text" placeholder="Naziv materijala" required />
-        <textarea v-model="opis" placeholder="Opis materijala" required></textarea>
-        <input v-model="imageUrl" type="text" placeholder="URL slike (opcionalno)" />
-        <input type="file" @change="handleFileUpload" accept=".pdf,.doc,.docx" />
-        <button type="submit">Dodaj materijal</button>
-        <p v-if="fileUrl" class="upload-info">
-          📎 Datoteka spremljena: <a :href="fileUrl" target="_blank">Preuzmi</a>
-        </p>
-      </form>
+    <!-- Gumb za dodavanje materijala -->
+    <div class="d-flex justify-content-end mb-3">
+      <button
+        v-if="isProfesor && predajePredmet"
+        class="btn btn-primary"
+        @click="goToAddMaterial"
+      >
+        + Dodaj materijal
+      </button>
     </div>
 
-    <div v-else class="not-allowed">
-      
+    <div v-if="materijali.length === 0" class="alert alert-warning text-center">
+      📭 Nema materijala za ovaj predmet.
     </div>
 
-    <div v-if="materijali.length === 0" class="no-materials">
-      Trenutno nema materijala za ovaj predmet.
+    <div v-else class="row g-4">
+      <div v-for="material in materijali" :key="material.id" class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ material.naziv }}</h5>
+            <p class="card-text">{{ material.opis }}</p>
+            <a v-if="material.fileUrl" :href="material.fileUrl" target="_blank" class="btn btn-sm btn-outline-primary">📎 Preuzmi datoteku</a>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <ul v-else class="material-list">
-      <li v-for="material in materijali" :key="material.id" class="material-item">
-        <h3>{{ material.naziv }}</h3>
-        <p>{{ material.opis }}</p>
-        <img v-if="material.imageUrl" :src="material.imageUrl" class="material-image" />
-        <a v-if="material.fileUrl" :href="material.fileUrl" target="_blank" class="material-download">
-          📄 Preuzmi datoteku
-        </a>
-      </li>
-    </ul>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 export default {
   name: 'SubjectMaterials',
   setup() {
     const route = useRoute();
-    const subject = ref(decodeURIComponent(route.params.predmet));
+    const router = useRouter();
+    const predmet = decodeURIComponent(route.params.predmet);
     const materijali = ref([]);
-    const naziv = ref('');
-    const opis = ref('');
-    const imageUrl = ref('');
-    const file = ref(null);
-    const fileUrl = ref('');
     const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
+    const predajePredmet = ref(false);
 
     const fetchMaterijali = async () => {
       try {
-        const res = await axios.get('http://localhost:3001/materials');
-        materijali.value = res.data.filter(m => m.subject === subject.value);
+        const res = await axios.get(`http://localhost:3001/materials`);
+        materijali.value = res.data.filter(m => m.subject === predmet);
       } catch (err) {
-        console.error('❌ Greška pri dohvaćanju materijala:', err);
+        console.error('Greška pri dohvaćanju materijala:', err);
       }
     };
 
-    const handleFileUpload = async (event) => {
-      file.value = event.target.files[0];
-      if (!file.value) return;
-      const formData = new FormData();
-      formData.append('file', file.value);
+    const checkDozvola = async () => {
+      if (!isProfesor.value) return;
+
+      const user = JSON.parse(localStorage.getItem('user'));
       try {
-        const res = await axios.post('http://localhost:3001/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        fileUrl.value = res.data.fileUrl;
+        const res = await axios.get(`http://localhost:3001/profesori/${user.id}`);
+        const predmeti = res.data.Subjects.map(s => s.naziv);
+        predajePredmet.value = predmeti.includes(predmet);
       } catch (err) {
-        console.error('❌ Greška pri uploadu datoteke:', err);
+        console.error('Greška pri provjeri dozvole:', err);
       }
     };
 
-    const dodajMaterijal = async () => {
-      try {
-        await axios.post('http://localhost:3001/materials', {
-          naziv: naziv.value,
-          opis: opis.value,
-          imageUrl: imageUrl.value || null,
-          fileUrl: fileUrl.value || null,
-          subject: subject.value
-        });
-        naziv.value = '';
-        opis.value = '';
-        imageUrl.value = '';
-        file.value = null;
-        fileUrl.value = '';
-        await fetchMaterijali();
-      } catch (err) {
-        console.error('❌ Greška pri dodavanju materijala:', err);
-      }
+    const goToAddMaterial = () => {
+      router.push({ name: 'AddMaterial', query: { predmet } });
     };
 
-    onMounted(fetchMaterijali);
+    onMounted(() => {
+      fetchMaterijali();
+      checkDozvola();
+    });
 
     return {
-      subject,
+      predmet,
       materijali,
-      naziv,
-      opis,
-      imageUrl,
-      fileUrl,
       isProfesor,
-      handleFileUpload,
-      dodajMaterijal
+      predajePredmet,
+      goToAddMaterial
     };
   }
 };
 </script>
+
 
 <style scoped>
 .subject-materials {

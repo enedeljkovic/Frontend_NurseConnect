@@ -161,6 +161,17 @@ export default {
 
 
 <style scoped>
+.container {
+  max-width: 800px;
+}
+.card-title {
+  color: #333;
+}
+</style>
+
+
+
+<style scoped>
 .add-quiz-page {
   max-width: 800px;
   margin: auto;
