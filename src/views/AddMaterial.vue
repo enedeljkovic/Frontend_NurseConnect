@@ -17,8 +17,18 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Slika (opcionalno)</label>
-        <input v-model="imageUrl" type="text" class="form-control" />
+        <label class="form-label">Razred</label>
+        <select v-model="razred" class="form-select" required>
+          <option disabled value="">Odaberi razred</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Slika (opcionalno – URL)</label>
+        <input v-model="imageUrl" type="text" class="form-control" placeholder="https://..." />
       </div>
 
       <div class="mb-3">
@@ -41,43 +51,60 @@ export default {
   setup() {
     const route = useRoute();
     const router = useRouter();
-    const predmet = route.query.predmet || ''; // preuzmi iz upita
+    const predmet = route.query.predmet || '';
 
     const naziv = ref('');
     const opis = ref('');
     const imageUrl = ref('');
     const file = ref(null);
+    const razred = ref('');
 
     const handleFile = (e) => {
       file.value = e.target.files[0];
     };
 
     const submitMaterial = async () => {
-      let fileUrl = null;
+      try {
+        let fileUrl = '';
 
-      if (file.value) {
-        const formData = new FormData();
-        formData.append('file', file.value);
+        if (file.value) {
+          const formData = new FormData();
+          formData.append('file', file.value);
+          const res = await axios.post('http://localhost:3001/upload', formData);
+          fileUrl = res.data.fileUrl;
+        }
 
-        const uploadRes = await axios.post('http://localhost:3001/upload', formData);
-        fileUrl = uploadRes.data.fileUrl;
+        await axios.post('http://localhost:3001/materials', {
+          naziv: naziv.value,
+          opis: opis.value,
+          imageUrl: imageUrl.value,
+          fileUrl,
+          subject: predmet,
+          razred: razred.value
+        });
+
+        router.push({ name: 'SubjectMaterials', params: { predmet } });
+      } catch (error) {
+        console.error('Greška pri dodavanju materijala:', error);
+        alert('❌ Greška pri dodavanju materijala.');
       }
-
-      await axios.post('http://localhost:3001/materials', {
-        naziv: naziv.value,
-        opis: opis.value,
-        imageUrl: imageUrl.value,
-        fileUrl,
-        subject: predmet,
-      });
-
-      router.push({ name: 'SubjectMaterials', params: { predmet } });
     };
 
-    return { naziv, opis, imageUrl, file, predmet, handleFile, submitMaterial };
-  },
+    return {
+      naziv,
+      opis,
+      imageUrl,
+      file,
+      predmet,
+      razred,
+      handleFile,
+      submitMaterial
+    };
+  }
 };
 </script>
+
+
 
 
 <style scoped>

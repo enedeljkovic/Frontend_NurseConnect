@@ -63,6 +63,12 @@ export default {
 
         localStorage.setItem('user', JSON.stringify(korisnik));
         localStorage.setItem('isProfesor', isProfesor.value.toString());
+
+        // ✅ Spremi razred ako je učenik
+        if (!isProfesor.value && korisnik.razred) {
+          localStorage.setItem('razred', korisnik.razred);
+        }
+
         router.push('/home');
       } catch (err) {
         error.value = err.response?.data?.error || 'Greška prilikom prijave.';
@@ -89,6 +95,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .login-page {

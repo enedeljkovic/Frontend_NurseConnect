@@ -9,6 +9,21 @@
         <input v-model="naziv" type="text" class="form-control" placeholder="Npr. Anatomija 1" required />
       </div>
 
+      <div class="mb-3">
+        <label class="form-label">Razred</label>
+        <select v-model="razred" class="form-select" required>
+          <option value="">Odaberi razred</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Maksimalan broj pokušaja</label>
+        <input v-model.number="maxPokusaja" type="number" min="1" class="form-control" required />
+      </div>
+
       <div v-for="(pitanje, index) in pitanja" :key="index" class="card mb-4 shadow-sm">
         <div class="card-body">
           <h5 class="card-title">Pitanje {{ index + 1 }}</h5>
@@ -22,13 +37,11 @@
             </select>
           </div>
 
-          <!-- Tekst pitanja -->
           <div class="mb-3" v-if="pitanje.type !== 'image'">
             <label class="form-label">Tekst pitanja</label>
             <input v-model="pitanje.question" type="text" class="form-control" required />
           </div>
 
-          <!-- Upload slike -->
           <div class="mb-3" v-if="pitanje.type === 'image'">
             <label class="form-label">Dodaj sliku</label>
             <input type="file" accept="image/*" class="form-control" @change="handleImageUpload($event, index)" />
@@ -37,7 +50,6 @@
             </div>
           </div>
 
-          <!-- Višestruki odabir -->
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
             <label class="form-label">Odgovori</label>
             <div v-for="(opcija, i) in pitanje.options" :key="i" class="input-group mb-2">
@@ -55,7 +67,6 @@
             </div>
           </div>
 
-          <!-- True/False -->
           <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
             <label class="form-label">Točan odgovor</label>
             <div class="form-check">
@@ -81,8 +92,7 @@
 <script>
 import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
-import { ref, onMounted } from 'vue';
-
+import { ref } from 'vue';
 
 export default {
   name: 'AddQuiz',
@@ -92,6 +102,8 @@ export default {
     const predmet = route.query.predmet || 'Nepoznato';
 
     const naziv = ref('');
+    const razred = ref('');
+    const maxPokusaja = ref(1);
     const pitanja = ref([]);
 
     const addPitanje = () => {
@@ -135,7 +147,9 @@ export default {
         await axios.post('http://localhost:3001/quizzes', {
           naziv: naziv.value,
           pitanja: pitanja.value,
-          predmet
+          predmet,
+          razred: razred.value,
+          maxPokusaja: maxPokusaja.value
         });
         router.push('/quizzes');
       } catch (err) {
@@ -148,6 +162,8 @@ export default {
       naziv,
       pitanja,
       predmet,
+      razred,
+      maxPokusaja,
       addPitanje,
       removePitanje,
       addOption,
@@ -158,6 +174,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>

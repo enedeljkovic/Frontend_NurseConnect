@@ -24,6 +24,7 @@
           <div class="card-body">
             <h5 class="card-title">{{ material.naziv }}</h5>
             <p class="card-text">{{ material.opis }}</p>
+            <p class="text-muted"><strong>Razred:</strong> {{ material.razred || 'Općenito' }}</p>
             <a v-if="material.fileUrl" :href="material.fileUrl" target="_blank" class="btn btn-sm btn-outline-primary">📎 Preuzmi datoteku</a>
           </div>
         </div>
@@ -46,11 +47,18 @@ export default {
     const materijali = ref([]);
     const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
     const predajePredmet = ref(false);
+    const user = JSON.parse(localStorage.getItem('user'));
 
     const fetchMaterijali = async () => {
       try {
         const res = await axios.get(`http://localhost:3001/materials`);
-        materijali.value = res.data.filter(m => m.subject === predmet);
+        if (!isProfesor.value && user?.razred) {
+          materijali.value = res.data.filter(
+            m => m.subject === predmet && m.razred === user.razred
+          );
+        } else {
+          materijali.value = res.data.filter(m => m.subject === predmet);
+        }
       } catch (err) {
         console.error('Greška pri dohvaćanju materijala:', err);
       }
@@ -58,8 +66,6 @@ export default {
 
     const checkDozvola = async () => {
       if (!isProfesor.value) return;
-
-      const user = JSON.parse(localStorage.getItem('user'));
       try {
         const res = await axios.get(`http://localhost:3001/profesori/${user.id}`);
         const predmeti = res.data.Subjects.map(s => s.naziv);
@@ -88,6 +94,9 @@ export default {
   }
 };
 </script>
+
+
+
 
 
 <style scoped>

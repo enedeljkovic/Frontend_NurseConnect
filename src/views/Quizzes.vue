@@ -13,9 +13,7 @@
           class="card predmet-card shadow h-100"
           @click="selectSubject(predmet)"
         >
-          <div
-            class="card-body text-center d-flex flex-column justify-content-center"
-          >
+          <div class="card-body text-center d-flex flex-column justify-content-center">
             <h5 class="card-title fw-bold text-secondary">{{ predmet }}</h5>
           </div>
         </div>
@@ -51,9 +49,13 @@
               <div>
                 <h5 class="card-title text-dark fw-bold">{{ quiz.naziv }}</h5>
                 <p class="text-muted">{{ quiz.pitanja.length }} pitanja</p>
+                <p class="text-muted"><strong>Razred:</strong> {{ quiz.razred }}</p>
               </div>
-              <button class="btn btn-outline-success mt-3" @click="goToQuiz(quiz.id)">
-                ▶ Riješi kviz
+              <button
+                class="btn btn-outline-success mt-3"
+                @click="goToQuiz(quiz.id)"
+              >
+                {{ solvedQuizzes[quiz.id] ? '👁 Pogledaj riješeni kviz' : '▶ Riješi kviz' }}
               </button>
             </div>
           </div>
@@ -72,47 +74,61 @@ export default {
   name: 'Quizzes',
   setup() {
     const predmeti = [
-      'Psihologija',
-      'Načela poučavanja',
-      'Etika u sestrinstvu',
-      'Anatomija i fiziologija',
-      'Bakteriologija, virologija i parazitologija',
-      'Biokemija',
-      'Opća načela zdravlja i njege',
-      'Zdravstvena njega - opća',
-      'Zdravstvena njega zdravog djeteta i adolescenta',
-      'Osnove fizikalne i radne terapije (izborni)',
-      'Profesionalna komunikacija u sestrinstvu (izborni)',
-      'Sat razrednika'
+      'Psihologija', 'Načela poučavanja', 'Etika u sestrinstvu',
+      'Anatomija i fiziologija', 'Bakteriologija, virologija i parazitologija', 'Biokemija',
+      'Opća načela zdravlja i njege', 'Zdravstvena njega - opća',
+      'Zdravstvena njega zdravog djeteta i adolescenta', 'Osnove fizikalne i radne terapije (izborni)',
+      'Profesionalna komunikacija u sestrinstvu (izborni)', 'Sat razrednika'
     ];
 
     const quizzes = ref([]);
+    const solvedQuizzes = ref({});
     const selectedSubject = ref(null);
     const router = useRouter();
 
     const user = JSON.parse(localStorage.getItem('user'));
     const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
     const profesorPredmeti = ref([]);
+    const razred = ref(user?.razred || null);
 
     const mozeDodatiKviz = computed(() => {
-      if (!isProfesor.value || !selectedSubject.value) return false;
-      return profesorPredmeti.value.includes(selectedSubject.value);
+      return isProfesor.value && selectedSubject.value && profesorPredmeti.value.includes(selectedSubject.value);
     });
 
     const fetchQuizzesForSubject = async (predmet) => {
       try {
         const res = await axios.get(`http://localhost:3001/quizzes/subject/${encodeURIComponent(predmet)}`);
-        quizzes.value = res.data;
+        let allQuizzes = res.data;
+
+        if (!isProfesor.value && razred.value) {
+          allQuizzes = allQuizzes.filter(kviz => kviz.razred === razred.value);
+        }
+
+        quizzes.value = allQuizzes;
+        await checkSolvedQuizzes(allQuizzes.map(q => q.id));
       } catch (error) {
         console.error('Greška pri dohvaćanju kvizova:', error);
       }
     };
 
+    const checkSolvedQuizzes = async (quizIds) => {
+      solvedQuizzes.value = {};
+      for (const id of quizIds) {
+        try {
+          const res = await axios.get(`http://localhost:3001/solved/${user.id}/${id}`);
+          solvedQuizzes.value[id] = res.data.solved;
+        } catch (err) {
+          console.error('Greška pri provjeri riješenih kvizova:', err);
+        }
+      }
+    };
+
     const fetchProfesorPredmeti = async () => {
-      if (!user || !user.id) return;
+      if (!user?.id) return;
       try {
         const res = await axios.get(`http://localhost:3001/profesori/${user.id}`);
         profesorPredmeti.value = res.data.Subjects.map(s => s.naziv);
+        localStorage.setItem('profesorPredmeti', JSON.stringify(profesorPredmeti.value));
       } catch (err) {
         console.error('Greška pri dohvaćanju predmeta profesora:', err);
       }
@@ -131,13 +147,12 @@ export default {
       router.push(`/quizzes/${id}`);
     };
 
-    if (isProfesor.value) {
-      fetchProfesorPredmeti();
-    }
+    if (isProfesor.value) fetchProfesorPredmeti();
 
     return {
       predmeti,
       quizzes,
+      solvedQuizzes,
       selectedSubject,
       isProfesor,
       mozeDodatiKviz,
@@ -148,6 +163,9 @@ export default {
   }
 };
 </script>
+
+
+
 
 
 <style scoped>

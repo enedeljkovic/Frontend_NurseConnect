@@ -6,14 +6,22 @@
       <h4 class="mb-3">➕ Dodaj novog studenta</h4>
       <form @submit.prevent="dodajStudenta">
         <div class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <input v-model="noviStudent.ime" type="text" class="form-control" placeholder="Ime" required />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <input v-model="noviStudent.prezime" type="text" class="form-control" placeholder="Prezime" required />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <input v-model="noviStudent.email" type="email" class="form-control" placeholder="Email" required />
+          </div>
+          <div class="col-md-3">
+            <select v-model="noviStudent.razred" class="form-select" required>
+              <option disabled value="">Odaberi razred</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select>
           </div>
         </div>
         <div class="mt-3 d-flex justify-content-between align-items-center">
@@ -31,6 +39,7 @@
             <th>Ime</th>
             <th>Prezime</th>
             <th>Email</th>
+            <th>Razred</th>
             <th>Kod</th>
             <th>Akcija</th>
           </tr>
@@ -40,6 +49,7 @@
             <td>{{ student.ime }}</td>
             <td>{{ student.prezime }}</td>
             <td>{{ student.email }}</td>
+            <td>{{ student.razred }}</td>
             <td>{{ student.kod }}</td>
             <td>
               <button class="btn btn-danger btn-sm" @click="obrisiStudenta(student.id)">🗑️ Obriši</button>
@@ -60,7 +70,7 @@ export default {
   name: 'AdminStudents',
   setup() {
     const studenti = ref([]);
-    const noviStudent = ref({ ime: '', prezime: '', email: '' });
+    const noviStudent = ref({ ime: '', prezime: '', email: '', razred: '' });
     const poruka = ref('');
 
     const ucitajStudente = async () => {
@@ -73,12 +83,12 @@ export default {
     };
 
     const dodajStudenta = async () => {
-      if (!noviStudent.value.ime || !noviStudent.value.prezime || !noviStudent.value.email) return;
+      if (!noviStudent.value.ime || !noviStudent.value.prezime || !noviStudent.value.email || !noviStudent.value.razred) return;
 
       try {
         await axios.post('http://localhost:3001/students', noviStudent.value);
         poruka.value = 'Student uspješno dodan!';
-        noviStudent.value = { ime: '', prezime: '', email: '' };
+        noviStudent.value = { ime: '', prezime: '', email: '', razred: '' };
         ucitajStudente();
       } catch (err) {
         console.error('Greška kod dodavanja:', err);
@@ -101,6 +111,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .card {

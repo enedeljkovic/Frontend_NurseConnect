@@ -3,39 +3,38 @@
     <div v-if="quiz" class="card shadow p-4">
       <h2 class="mb-4 text-primary">{{ quiz.naziv }}</h2>
 
-      <form @submit.prevent="submitAnswers">
-        <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4 border rounded p-3">
-          <p class="fw-bold">
-            {{ index + 1 }}.
-            <span v-if="pitanje.type !== 'image'">{{ pitanje.question }}</span>
-            <span v-else>Pitanje sa slikom</span>
-          </p>
+      <div v-if="alreadySolved && rezultat.length">
+        <h4 class="text-success">✅ Već si riješio ovaj kviz!</h4>
+        <p class="fw-bold">
+          Točno odgovoreno: {{ brojTocnih }}/{{ rezultat.length }} ({{ postotak }}%)
+        </p>
+        <p class="text-muted">Pregled točnih i netočnih odgovora:</p>
+      </div>
 
-          <div v-if="pitanje.type === 'image' && pitanje.image" class="mb-3">
-            <img :src="pitanje.image" alt="Slika pitanja" class="img-fluid rounded shadow" style="max-width: 400px;" />
-          </div>
+      <form v-if="!alreadySolved" @submit.prevent="submitAnswers">
+        <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4 border rounded p-3">
+          <p class="fw-bold">{{ index + 1 }}. {{ pitanje.question }}</p>
 
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
             <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
-                :id="`q${index}-o${i}`"
                 :value="opcija"
                 v-model="odgovori[index]"
               />
-              <label class="form-check-label" :for="`q${index}-o${i}`">{{ opcija }}</label>
+              <label class="form-check-label">{{ opcija }}</label>
             </div>
           </div>
 
-          <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
+          <div v-else-if="pitanje.type === 'truefalse'">
             <div class="form-check">
-              <input class="form-check-input" type="radio" :id="`q${index}-t`" value="T" v-model="odgovori[index]" />
-              <label class="form-check-label" :for="`q${index}-t`">Točno</label>
+              <input class="form-check-input" type="radio" :value="'T'" v-model="odgovori[index]" />
+              <label class="form-check-label">Točno</label>
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="radio" :id="`q${index}-n`" value="N" v-model="odgovori[index]" />
-              <label class="form-check-label" :for="`q${index}-n`">Netočno</label>
+              <input class="form-check-input" type="radio" :value="'N'" v-model="odgovori[index]" />
+              <label class="form-check-label">Netočno</label>
             </div>
           </div>
         </div>
@@ -43,22 +42,19 @@
         <button type="submit" class="btn btn-success w-100 mt-3">Pošalji odgovore</button>
       </form>
 
-      <div v-if="rezultat.length" class="mt-5">
-        <h4 class="text-info">Rezultati:</h4>
-        <ul class="list-group mt-3">
-          <li
-            v-for="(tocno, i) in rezultat"
-            :key="i"
-            class="list-group-item d-flex justify-content-between"
-            :class="tocno ? 'list-group-item-success' : 'list-group-item-danger'"
-          >
-            <span>Pitanje {{ i + 1 }}</span>
-            <strong>{{ tocno ? 'Točno' : 'Netočno' }}</strong>
-          </li>
-        </ul>
-        <p class="text-center mt-4 fw-bold">
-          ✅ Točno odgovoreno: {{ brojTocnih }}/{{ rezultat.length }} ({{ postotak }}%)
-        </p>
+      <div v-if="alreadySolved" class="mt-4">
+        <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4">
+          <h6 class="fw-bold">Pitanje {{ index + 1 }}: {{ pitanje.question }}</h6>
+          <p>
+            Tvoj odgovor:
+            <span :class="{'text-success': rezultat[index], 'text-danger': !rezultat[index]}">
+              {{ formatOdgovor(odgovori[index]) }}
+            </span>
+          </p>
+          <p v-if="!rezultat[index]" class="text-info">
+            ✅ Točan odgovor: {{ formatOdgovor(pitanje.correct) }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -73,17 +69,25 @@ export default {
   name: 'TakeQuiz',
   setup() {
     const route = useRoute();
+    const quizId = Number(route.params.id);
     const quiz = ref(null);
     const odgovori = ref([]);
     const rezultat = ref([]);
-    const quizId = Number(route.params.id);
+    const alreadySolved = ref(false);
 
     const fetchQuiz = async () => {
+      const student = JSON.parse(localStorage.getItem('user'));
       try {
-        if (!quizId || isNaN(quizId)) {
-          console.error('Nevažeći ID kviza');
+        const solvedRes = await axios.get(`http://localhost:3001/solved/${student.id}/${quizId}`);
+        if (solvedRes.data.solved) {
+          const res = await axios.get(`http://localhost:3001/quizzes/${quizId}`);
+          quiz.value = res.data;
+          rezultat.value = solvedRes.data.rezultat;
+          alreadySolved.value = true;
+          odgovori.value = quiz.value.pitanja.map(p => p.correct); // show correct answers
           return;
         }
+
         const res = await axios.get(`http://localhost:3001/quizzes/${quizId}`);
         quiz.value = res.data;
         odgovori.value = quiz.value.pitanja.map(p =>
@@ -95,19 +99,20 @@ export default {
     };
 
     const submitAnswers = async () => {
+      const student = JSON.parse(localStorage.getItem('user'));
       try {
-        const student = JSON.parse(localStorage.getItem('user'));
-        if (!quizId || isNaN(quizId)) {
-          console.error('Nevažeći ID kviza u submitu');
-          return;
-        }
         const res = await axios.post(`http://localhost:3001/quizzes/${quizId}/check-answers`, {
           odgovori: odgovori.value,
           studentId: student.id
         });
         rezultat.value = res.data.rezultat;
+        alreadySolved.value = true;
       } catch (err) {
-        console.error('Greška pri slanju odgovora:', err);
+        if (err.response && err.response.status === 403) {
+          alert('❌ Dosegnut je maksimalan broj pokušaja.');
+        } else {
+          console.error('Greška pri slanju odgovora:', err);
+        }
       }
     };
 
@@ -118,19 +123,27 @@ export default {
         : 0
     );
 
+    const formatOdgovor = (odg) => {
+      if (Array.isArray(odg)) return odg.join(', ');
+      return odg;
+    };
+
     onMounted(fetchQuiz);
 
     return {
       quiz,
       odgovori,
       rezultat,
+      alreadySolved,
       brojTocnih,
       postotak,
-      submitAnswers
+      submitAnswers,
+      formatOdgovor
     };
   }
 };
 </script>
+
 
 
 
