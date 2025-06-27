@@ -54,7 +54,7 @@ const cards = [
   { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
   { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
   { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' },
-  { label: 'Postavke', route: 'settings', icon: 'fas fa-cog' }
+  { label: '📬 Chat s profesorima', route: 'chat', icon: 'fas fa-mailbox' }
 ];
 
 const sviMaterijali = ref([]);

@@ -36,6 +36,9 @@ const routes = [
   { path: '/admin/professors', name: 'AdminProfessors', component: () => import('../views/AdminProfessors.vue') },
   { path: '/admin/settings', name: 'AdminSettings', component: () => import('../views/AdminSettings.vue') },
   { path: '/add-material', name: 'AddMaterial', component: () => import('../views/AddMaterial.vue') },
+  { path: '/chat', name: 'Chat', component: () => import('../views/Chat.vue') },
+
+
 
 
 
