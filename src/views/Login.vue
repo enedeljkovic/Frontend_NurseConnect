@@ -54,7 +54,13 @@ export default {
 
         const response = await axios.post(url, { kod: kod.value });
 
+        // 🔁 Promjena OVDJE:
         const korisnik = isProfesor.value ? response.data.profesor : response.data.student;
+
+        if (!korisnik?.id) {
+          error.value = 'Greška: Neispravni podaci.';
+          return;
+        }
 
         if (korisnik.email !== email.value) {
           error.value = 'Email i kod se ne podudaraju.';
@@ -64,7 +70,6 @@ export default {
         localStorage.setItem('user', JSON.stringify(korisnik));
         localStorage.setItem('isProfesor', isProfesor.value.toString());
 
-        // ✅ Spremi razred ako je učenik
         if (!isProfesor.value && korisnik.razred) {
           localStorage.setItem('razred', korisnik.razred);
         }
@@ -95,6 +100,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>

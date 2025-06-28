@@ -97,14 +97,17 @@ import { ref } from 'vue';
 export default {
   name: 'AddQuiz',
   setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const predmet = route.query.predmet || 'Nepoznato';
+  const route = useRoute();
+  const router = useRouter();
+  const predmet = route.query.predmet || 'Nepoznato';
 
-    const naziv = ref('');
-    const razred = ref('');
-    const maxPokusaja = ref(1);
-    const pitanja = ref([]);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+
+  const naziv = ref('');
+  const razred = ref('');
+  const maxPokusaja = ref(1);
+  const pitanja = ref([]);
 
     const addPitanje = () => {
       pitanja.value.push({
@@ -149,7 +152,8 @@ export default {
           pitanja: pitanja.value,
           predmet,
           razred: razred.value,
-          maxPokusaja: maxPokusaja.value
+          maxPokusaja: maxPokusaja.value,
+          profesorId: user.id
         });
         router.push('/quizzes');
       } catch (err) {
@@ -169,7 +173,8 @@ export default {
       addOption,
       removeOption,
       handleImageUpload,
-      spremiKviz
+      spremiKviz,
+      user
     };
   }
 };

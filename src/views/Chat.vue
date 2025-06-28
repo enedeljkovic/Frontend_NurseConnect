@@ -1,9 +1,9 @@
 <template>
   <div class="container my-5">
-    <h2 class="mb-4 text-primary">📬 Chat s profesorima</h2>
+    <h2 class="mb-4 text-primary text-center">📬 Chat s profesorima</h2>
 
     <!-- Odabir primatelja -->
-    <div class="mb-3">
+    <div class="mb-4">
       <label class="form-label">Odaberi profesora:</label>
       <select v-model="selectedRecipientId" class="form-select" @change="fetchMessages">
         <option disabled value="">-- Odaberi --</option>
@@ -18,22 +18,19 @@
       </select>
     </div>
 
-    <!-- Poruke -->
-    <div class="chat-box border p-3 rounded bg-light mb-3" style="height: 300px; overflow-y: auto;">
+    <!-- Chat poruke -->
+    <div class="chat-box mb-3 p-3 rounded shadow-sm">
       <div
         v-for="msg in messages"
         :key="msg.id"
-        :class="{'text-end': msg.senderId === currentUserId}"
+        :class="['message-bubble', msg.senderId === currentUserId ? 'sent' : 'received']"
       >
-        <p class="mb-1">
-          <strong>{{ msg.senderId === currentUserId ? 'Vi' : 'On' }}:</strong>
-          {{ msg.content }}
-        </p>
+        <p class="mb-1"><strong>{{ msg.senderId === currentUserId ? 'Vi' : 'On' }}:</strong> {{ msg.content }}</p>
         <small class="text-muted">{{ formatTimestamp(msg.timestamp) }}</small>
       </div>
     </div>
 
-    <!-- Unos nove poruke -->
+    <!-- Slanje poruke -->
     <div class="input-group">
       <input
         v-model="newMessage"
@@ -49,7 +46,7 @@
 
 <script>
 import axios from 'axios';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 
 export default {
   name: 'Chat',
@@ -71,14 +68,21 @@ export default {
 
     const fetchUnreadCounts = async () => {
       const res = await axios.get(`http://localhost:3001/messages/unread/${currentUserId}`);
-      unreadMessages.value = res.data; // primjer: { 3: 2, 5: 1 }
+      unreadMessages.value = res.data;
     };
 
     const fetchMessages = async () => {
       if (!selectedRecipientId.value) return;
+
+      // Označi kao pročitano
+      await axios.post('http://localhost:3001/messages/mark-read', {
+        senderId: selectedRecipientId.value,
+        receiverId: currentUserId
+      });
+
       const res = await axios.get(`http://localhost:3001/messages/${currentUserId}/${selectedRecipientId.value}`);
       messages.value = res.data;
-      await fetchUnreadCounts(); // osvježi broj nepročitanih
+      await fetchUnreadCounts();
     };
 
     const sendMessage = async () => {
@@ -118,11 +122,32 @@ export default {
 
 <style scoped>
 .chat-box {
-  background-color: #f9f9f9;
-  max-height: 300px;
-  overflow-y: scroll;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ddd;
+  background-color: #f8f9fa;
+  height: 400px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 0.6rem 1rem;
+  margin: 0.4rem 0;
+  border-radius: 15px;
+  position: relative;
+  word-break: break-word;
+}
+
+.sent {
+  background-color: #d1e7dd;
+  align-self: flex-end;
+  margin-left: auto;
+  text-align: right;
+}
+
+.received {
+  background-color: #f8d7da;
+  align-self: flex-start;
+  margin-right: auto;
+  text-align: left;
 }
 </style>

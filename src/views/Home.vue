@@ -8,7 +8,7 @@
     <section class="cards-section">
       <div
         class="card"
-        v-for="(card, index) in cards"
+        v-for="(card, index) in prikazaneKartice"
         :key="index"
         @click="goTo(card.route)"
       >
@@ -17,7 +17,8 @@
       </div>
     </section>
 
-    <section class="progress-section">
+    <!-- UČENIK: Napredak -->
+    <section v-if="!isProfesor" class="progress-section">
       <h2>Napredak</h2>
 
       <div class="progress-block">
@@ -36,6 +37,14 @@
         <p class="small">{{ rijeseniKvizovi.length }} / {{ sviKvizovi.length }} riješeno</p>
       </div>
     </section>
+
+    <!-- PROFESOR: Kratka statistika kvizova -->
+    <section v-if="isProfesor" class="profesor-statistika">
+      <h2>Pregled statistike kvizova</h2>
+      <p><strong>Ukupno dodanih kvizova:</strong> {{ brojKvizova }}</p>
+      <p><strong>Ukupno riješenih pokušaja:</strong> {{ brojPokusaja }}</p>
+      <p><strong>Prosječna uspješnost:</strong> {{ prosjek }}%</p>
+    </section>
   </div>
 </template>
 
@@ -45,48 +54,75 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 
 const router = useRouter();
+const goTo = (page) => router.push(`/${page}`);
 
-const goTo = (page) => {
-  router.push(`/${page}`);
-};
+const isProfesor = localStorage.getItem('isProfesor') === 'true';
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const mojRazred = user.razred;
 
-const cards = [
-  { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
-  { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
-  { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' },
-  { label: '📬 Chat s profesorima', route: 'chat', icon: 'fas fa-mailbox' }
-];
-
+// Napredak - učenik
 const sviMaterijali = ref([]);
 const sviKvizovi = ref([]);
 const procitaniMaterijali = ref([]);
 const rijeseniKvizovi = ref([]);
-
 const procentMaterijala = ref(0);
 const procentKvizova = ref(0);
 
+// Statistika - profesor
+const brojKvizova = ref(0);
+const brojPokusaja = ref(0);
+const prosjek = ref(0);
+
+// Kartice
+const karticeUcenik = [
+  { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
+  { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
+  { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' }
+];
+
+const karticeProfesor = [
+  { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
+  { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
+  { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' },
+  { label: 'Statistika kvizova', route: 'quiz-statistics', icon: 'fas fa-chart-bar' },
+  { label: 'Chat s profesorima', route: 'chat', icon: 'fas fa-comments' }
+];
+
+const prikazaneKartice = isProfesor ? karticeProfesor : karticeUcenik;
+
 onMounted(async () => {
-  try {
-    const [resMat, resKviz] = await Promise.all([
-      axios.get('http://localhost:3001/materials'),
-      axios.get('http://localhost:3001/quizzes')
-    ]);
+  if (!isProfesor) {
+    try {
+      const [resMat, resKviz] = await Promise.all([
+        axios.get('http://localhost:3001/materials'),
+        axios.get('http://localhost:3001/quizzes')
+      ]);
 
-    sviMaterijali.value = resMat.data;
-    sviKvizovi.value = resKviz.data;
+      sviMaterijali.value = resMat.data.filter((m) => m.razred === mojRazred);
+      sviKvizovi.value = resKviz.data.filter((k) => k.razred === mojRazred);
 
-    procitaniMaterijali.value = JSON.parse(localStorage.getItem('readMaterials') || '[]');
-    rijeseniKvizovi.value = JSON.parse(localStorage.getItem('completedQuizzes') || '[]');
+      procitaniMaterijali.value = JSON.parse(localStorage.getItem('readMaterials') || '[]');
+      rijeseniKvizovi.value = JSON.parse(localStorage.getItem('completedQuizzes') || '[]');
 
-    procentMaterijala.value = sviMaterijali.value.length
-      ? Math.round((procitaniMaterijali.value.length / sviMaterijali.value.length) * 100)
-      : 0;
+      procentMaterijala.value = sviMaterijali.value.length
+        ? Math.round((procitaniMaterijali.value.length / sviMaterijali.value.length) * 100)
+        : 0;
 
-    procentKvizova.value = sviKvizovi.value.length
-      ? Math.round((rijeseniKvizovi.value.length / sviKvizovi.value.length) * 100)
-      : 0;
-  } catch (err) {
-    console.error('Greška pri dohvaćanju napretka:', err);
+      procentKvizova.value = sviKvizovi.value.length
+        ? Math.round((rijeseniKvizovi.value.length / sviKvizovi.value.length) * 100)
+        : 0;
+    } catch (err) {
+      console.error('Greška pri dohvaćanju napretka:', err);
+    }
+  } else {
+    try {
+      const resStat = await axios.get(`http://localhost:3001/profesori/${user.id}/quiz-statistics`);
+      brojKvizova.value = resStat.data.totalQuizzes;
+      brojPokusaja.value = resStat.data.totalAttempts;
+      prosjek.value = resStat.data.averageScore;
+    } catch (err) {
+      console.error('Greška pri dohvaćanju statistike kvizova:', err);
+    }
   }
 });
 </script>
@@ -121,7 +157,7 @@ onMounted(async () => {
 
 .cards-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
   width: 100%;
