@@ -40,10 +40,30 @@
 
     <!-- PROFESOR: Kratka statistika kvizova -->
     <section v-if="isProfesor" class="profesor-statistika">
-      <h2>Pregled statistike kvizova</h2>
-      <p><strong>Ukupno dodanih kvizova:</strong> {{ brojKvizova }}</p>
-      <p><strong>Ukupno riješenih pokušaja:</strong> {{ brojPokusaja }}</p>
-      <p><strong>Prosječna uspješnost:</strong> {{ prosjek }}%</p>
+      <h2>Statistika kvizova</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <i class="fas fa-folder-plus"></i>
+          <div>
+            <p class="stat-value">{{ brojKvizova }}</p>
+            <p class="stat-label">Dodani kvizovi</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-check-double"></i>
+          <div>
+            <p class="stat-value">{{ brojPokusaja }}</p>
+            <p class="stat-label">Riješeni pokušaji</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-percentage"></i>
+          <div>
+            <p class="stat-value">{{ prosjek }}%</p>
+            <p class="stat-label">Prosječna uspješnost</p>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -116,16 +136,17 @@ onMounted(async () => {
     }
   } else {
     try {
-      const resStat = await axios.get(`http://localhost:3001/profesori/${user.id}/quiz-statistics`);
+      const resStat = await axios.get(`http://localhost:3001/api/v1/professor/${user.id}/quiz-summary`);
       brojKvizova.value = resStat.data.totalQuizzes;
       brojPokusaja.value = resStat.data.totalAttempts;
-      prosjek.value = resStat.data.averageScore;
+      prosjek.value = resStat.data.avgScore;
     } catch (err) {
       console.error('Greška pri dohvaćanju statistike kvizova:', err);
     }
   }
 });
 </script>
+
 
 <style scoped>
 .home-container {
@@ -228,5 +249,62 @@ onMounted(async () => {
 .small {
   font-size: 0.9rem;
   color: #666;
+}
+
+/* Stil za statistiku profesora */
+.profesor-statistika {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  text-align: center;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.profesor-statistika h2 {
+  color: #0077B6;
+  margin-bottom: 2rem;
+}
+
+.stat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.stat-card {
+  background-color: #f1fdf5;
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  width: 220px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+}
+
+.stat-card i {
+  font-size: 2rem;
+  color: #0077B6;
+  margin-right: 1rem;
+}
+
+.stat-value {
+  font-size: 1.7rem;
+  font-weight: bold;
+  color: #3B9A57;
+  margin: 0;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: #555;
+  margin: 0;
 }
 </style>
