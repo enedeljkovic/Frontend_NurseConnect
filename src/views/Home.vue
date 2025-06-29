@@ -65,87 +65,117 @@
         </div>
       </div>
     </section>
+    
+<div class="logout-wrapper">
+  <button @click="confirmLogout" class="logout-btn">
+    <i class="fas fa-sign-out-alt"></i> Odjava
+  </button>
+</div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import axios               from 'axios'
+import { useRouter }       from 'vue-router'
 
-const router = useRouter();
-const goTo = (page) => router.push(`/${page}`);
+const router   = useRouter()
+const goTo     = page => router.push(`/${page}`)
 
-const isProfesor = localStorage.getItem('isProfesor') === 'true';
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const mojRazred = user.razred;
+const isProfesor = localStorage.getItem('isProfesor') === 'true'
+const user       = JSON.parse(localStorage.getItem('user') || '{}')
+const mojRazred  = user.razred
 
-// Napredak - učenik
-const sviMaterijali = ref([]);
-const sviKvizovi = ref([]);
-const procitaniMaterijali = ref([]);
-const rijeseniKvizovi = ref([]);
-const procentMaterijala = ref(0);
-const procentKvizova = ref(0);
+// --- Napredak učenika ---
+const sviMaterijali       = ref([])
+const procitaniMaterijali = ref([])
+const procentMaterijala   = ref(0)
+const sviKvizovi          = ref([])
+const rijeseniKvizovi     = ref([])
+const procentKvizova      = ref(0)
 
-// Statistika - profesor
-const brojKvizova = ref(0);
-const brojPokusaja = ref(0);
-const prosjek = ref(0);
+// --- Statistika profesora ---
+const brojKvizova  = ref(0)
+const brojPokusaja = ref(0)
+const prosjek      = ref(0)
 
-// Kartice
+// Kartice za navigaciju
 const karticeUcenik = [
-  { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
-  { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
-  { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' }
-];
-
+  { label: 'Profil',     route: 'profile',        icon: 'fas fa-user' },
+  { label: 'Materijali', route: 'materials',      icon: 'fas fa-book' },
+  { label: 'Kvizovi',    route: 'quizzes',        icon: 'fas fa-question-circle' }
+]
 const karticeProfesor = [
-  { label: 'Profil', route: 'profile', icon: 'fas fa-user' },
-  { label: 'Materijali', route: 'materials', icon: 'fas fa-book' },
-  { label: 'Kvizovi', route: 'quizzes', icon: 'fas fa-question-circle' },
+  ...karticeUcenik,
   { label: 'Statistika kvizova', route: 'quiz-statistics', icon: 'fas fa-chart-bar' },
-  { label: 'Chat s profesorima', route: 'chat', icon: 'fas fa-comments' }
-];
+  { label: 'Chat s profesorima',  route: 'chat',            icon: 'fas fa-comments' }
+]
+const prikazaneKartice = isProfesor ? karticeProfesor : karticeUcenik
 
-const prikazaneKartice = isProfesor ? karticeProfesor : karticeUcenik;
+// funkcija koja dohvati i izračuna sve postotke
+async function fetchProgress() {
+  const [resM, resQ, resP] = await Promise.all([
+    axios.get('http://localhost:3001/materials'),
+    axios.get('http://localhost:3001/quizzes'),
+    axios.get(`http://localhost:3001/api/v1/progress/${user.id}`)
+  ])
 
-onMounted(async () => {
+  // materijali
+  sviMaterijali.value = resM.data.filter(m => m.razred === mojRazred)
+  procitaniMaterijali.value = sviMaterijali.value.filter(m =>
+    resP.data.readMaterialIds.includes(m.id)
+  )
+  procentMaterijala.value = sviMaterijali.value.length
+    ? Math.round(procitaniMaterijali.value.length / sviMaterijali.value.length * 100)
+    : 0
+
+  // kvizovi
+  sviKvizovi.value = resQ.data.filter(k => k.razred === mojRazred)
+  rijeseniKvizovi.value = sviKvizovi.value.filter(k =>
+    resP.data.solvedQuizIds.includes(k.id)
+  )
+  procentKvizova.value = sviKvizovi.value.length
+    ? Math.round(rijeseniKvizovi.value.length / sviKvizovi.value.length * 100)
+    : 0
+}
+
+// handler za event
+function onProgressUpdated() {
+  fetchProgress().catch(err => console.error('Greška pri osvježavanju napretka:', err))
+}
+
+// montaža
+onMounted(() => {
   if (!isProfesor) {
-    try {
-      const [resMat, resKviz] = await Promise.all([
-        axios.get('http://localhost:3001/materials'),
-        axios.get('http://localhost:3001/quizzes')
-      ]);
-
-      sviMaterijali.value = resMat.data.filter((m) => m.razred === mojRazred);
-      sviKvizovi.value = resKviz.data.filter((k) => k.razred === mojRazred);
-
-      procitaniMaterijali.value = JSON.parse(localStorage.getItem('readMaterials') || '[]');
-      rijeseniKvizovi.value = JSON.parse(localStorage.getItem('completedQuizzes') || '[]');
-
-      procentMaterijala.value = sviMaterijali.value.length
-        ? Math.round((procitaniMaterijali.value.length / sviMaterijali.value.length) * 100)
-        : 0;
-
-      procentKvizova.value = sviKvizovi.value.length
-        ? Math.round((rijeseniKvizovi.value.length / sviKvizovi.value.length) * 100)
-        : 0;
-    } catch (err) {
-      console.error('Greška pri dohvaćanju napretka:', err);
-    }
+    fetchProgress().catch(err => console.error('Greška pri dohvaćanju napretka:', err))
+    window.addEventListener('progress-updated', onProgressUpdated)
   } else {
-    try {
-      const resStat = await axios.get(`http://localhost:3001/api/v1/professor/${user.id}/quiz-summary`);
-      brojKvizova.value = resStat.data.totalQuizzes;
-      brojPokusaja.value = resStat.data.totalAttempts;
-      prosjek.value = resStat.data.avgScore;
-    } catch (err) {
-      console.error('Greška pri dohvaćanju statistike kvizova:', err);
-    }
+    // profesor: samo statistika kvizova
+    axios.get(`http://localhost:3001/api/v1/professor/${user.id}/quiz-summary`)
+      .then(({ data }) => {
+        brojKvizova.value  = data.totalQuizzes
+        brojPokusaja.value = data.totalAttempts
+        prosjek.value       = data.avgScore
+      })
+      .catch(err => console.error('Greška pri dohvaćanju statistike kvizova:', err))
   }
-});
+})
+
+function confirmLogout() {
+  if (confirm('Jesi li siguran da se želiš odjaviti?')) {
+    localStorage.clear();
+    router.push('/login');
+  }
+}
+
+
+// čišćenje listenera
+onBeforeUnmount(() => {
+  window.removeEventListener('progress-updated', onProgressUpdated)
+})
 </script>
+
 
 
 <style scoped>
@@ -306,5 +336,25 @@ onMounted(async () => {
   font-size: 1rem;
   color: #555;
   margin: 0;
+}
+.logout-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.logout-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
 }
 </style>

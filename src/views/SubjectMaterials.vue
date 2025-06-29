@@ -1,101 +1,81 @@
 <template>
   <div class="container my-5">
-    <router-link to="/materials" class="btn btn-outline-secondary mb-4">⬅ Natrag na predmete</router-link>
-    <h2 class="text-primary mb-4">Materijali za predmet: {{ predmet }}</h2>
-
-    <!-- Gumb za dodavanje materijala -->
-    <div class="d-flex justify-content-end mb-3">
-      <button
-        v-if="isProfesor && predajePredmet"
-        class="btn btn-primary"
-        @click="goToAddMaterial"
-      >
-        + Dodaj materijal
-      </button>
-    </div>
-
-    <div v-if="materijali.length === 0" class="alert alert-warning text-center">
-      📭 Nema materijala za ovaj predmet.
-    </div>
-
-    <div v-else class="row g-4">
-      <div v-for="material in materijali" :key="material.id" class="col-md-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">{{ material.naziv }}</h5>
-            <p class="card-text">{{ material.opis }}</p>
-            <p class="text-muted"><strong>Razred:</strong> {{ material.razred || 'Općenito' }}</p>
-            <a v-if="material.fileUrl" :href="material.fileUrl" target="_blank" class="btn btn-sm btn-outline-primary">📎 Preuzmi datoteku</a>
-          </div>
+    <!-- …ostatak template-a… -->
+    <div v-for="m in materijali" :key="m.id" class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ m.naziv }}</h5>
+          <p class="card-text">{{ m.opis }}</p>
+          <p class="text-muted"><strong>Razred:</strong> {{ m.razred }}</p>
+          <!-- prije je ovdje bio <a>, sad je button: -->
+          <button
+            v-if="m.fileUrl"
+            class="btn btn-sm btn-outline-primary"
+            @click="downloadAndMarkRead(m)"
+          >
+            📎 Preuzmi datoteku
+          </button>
         </div>
       </div>
     </div>
+    <!-- …ostatak template-a… -->
   </div>
 </template>
 
-<script>
-import axios from 'axios';
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+<script setup>
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'SubjectMaterials',
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const predmet = decodeURIComponent(route.params.predmet);
-    const materijali = ref([]);
-    const isProfesor = ref(localStorage.getItem('isProfesor') === 'true');
-    const predajePredmet = ref(false);
-    const user = JSON.parse(localStorage.getItem('user'));
+const route = useRoute()
+const router = useRouter()
+const predmet    = ref(decodeURIComponent(route.params.predmet))
+const materijali = ref([])
+const user       = JSON.parse(localStorage.getItem('user') || '{}')
+const isProfesor = ref(localStorage.getItem('isProfesor')==='true')
+const predajePredmet = ref(false)
 
-    const fetchMaterijali = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3001/materials`);
-        if (!isProfesor.value && user?.razred) {
-          materijali.value = res.data.filter(
-            m => m.subject === predmet && m.razred === user.razred
-          );
-        } else {
-          materijali.value = res.data.filter(m => m.subject === predmet);
-        }
-      } catch (err) {
-        console.error('Greška pri dohvaćanju materijala:', err);
-      }
-    };
+async function fetchMaterijali() {
+  const res = await axios.get('http://localhost:3001/materials')
+  materijali.value = res.data.filter(
+    m => m.subject===predmet.value && m.razred===user.razred
+  )
+}
 
-    const checkDozvola = async () => {
-      if (!isProfesor.value) return;
-      try {
-        const res = await axios.get(`http://localhost:3001/profesori/${user.id}`);
-        const predmeti = res.data.Subjects.map(s => s.naziv);
-        predajePredmet.value = predmeti.includes(predmet);
-      } catch (err) {
-        console.error('Greška pri provjeri dozvole:', err);
-      }
-    };
+async function checkDozvola() {
+  if (!isProfesor.value) return
+  const res = await axios.get(`http://localhost:3001/profesori/${user.id}`)
+  predajePredmet.value = res.data.Subjects.map(s=>s.naziv).includes(predmet.value)
+}
 
-    const goToAddMaterial = () => {
-      router.push({ name: 'AddMaterial', query: { predmet } });
-    };
+async function downloadAndMarkRead(m) {
+  try {
+    // 1) pošalji POST da se zapiše u ReadMaterials
+    await axios.post(
+      `http://localhost:3001/api/v1/progress/${user.id}/read/${m.id}`
+    )
+    console.log('✓ Obeleženo kao pročitano:', m.id)
 
-    onMounted(() => {
-      fetchMaterijali();
-      checkDozvola();
-    });
+    // 2) obavijesti Home.vue da osvježi napredak
+    window.dispatchEvent(new CustomEvent('progress-updated'))
 
-    return {
-      predmet,
-      materijali,
-      isProfesor,
-      predajePredmet,
-      goToAddMaterial
-    };
+    // 3) na kraju otvori PDF/tab
+    window.open(m.fileUrl, '_blank')
+
+  } catch (err) {
+    console.error('Greška pri označavanju pročitanog materijala:', err)
   }
-};
+}
+
+function goToAddMaterial() {
+  router.push({ name:'AddMaterial', query:{ predmet: predmet.value }})
+}
+
+onMounted(() => {
+  fetchMaterijali().catch(console.error)
+  checkDozvola().catch(console.error)
+})
 </script>
-
-
 
 
 

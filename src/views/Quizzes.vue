@@ -52,11 +52,21 @@
                 <p class="text-muted"><strong>Razred:</strong> {{ quiz.razred }}</p>
               </div>
               <button
-                class="btn btn-outline-success mt-3"
-                @click="goToQuiz(quiz.id)"
-              >
-                {{ solvedQuizzes[quiz.id] ? '👁 Pogledaj riješeni kviz' : '▶ Riješi kviz' }}
-              </button>
+  v-if="!isProfesor"
+  class="btn btn-outline-success mt-3"
+  @click="goToQuiz(quiz.id)"
+>
+  {{ solvedQuizzes[quiz.id] ? '👁 Pogledaj riješeni kviz' : '▶ Riješi kviz' }}
+</button>
+
+
+<button
+  v-else
+  class="btn btn-outline-info mt-3"
+  @click="goToQuiz(quiz.id)"
+>
+  👁 Pregled pitanja
+</button>
             </div>
           </div>
         </div>

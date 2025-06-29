@@ -4,6 +4,7 @@
     <h5 class="mb-4 text-muted">Predmet: {{ predmet }}</h5>
 
     <form @submit.prevent="spremiKviz">
+      <!-- Opći podaci -->
       <div class="mb-3">
         <label class="form-label">Naziv kviza</label>
         <input v-model="naziv" type="text" class="form-control" placeholder="Npr. Anatomija 1" required />
@@ -24,70 +25,123 @@
         <input v-model.number="maxPokusaja" type="number" min="1" class="form-control" required />
       </div>
 
-      <div v-for="(pitanje, index) in pitanja" :key="index" class="card mb-4 shadow-sm">
+      <!-- Pitanja -->
+      <div v-for="(pitanje, idx) in pitanja" :key="idx" class="card mb-4 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">Pitanje {{ index + 1 }}</h5>
+          <h5 class="card-title">Pitanje {{ idx + 1 }}</h5>
 
+          <!-- Tip pitanja -->
           <div class="mb-3">
             <label class="form-label">Vrsta pitanja</label>
             <select v-model="pitanje.type" class="form-select">
               <option value="multiple">Višestruki odabir</option>
               <option value="truefalse">Točno / Netočno</option>
-              <option value="image">Pitanje sa slikom</option>
+              <option value="image">Tekst + slika</option>
+              <option value="image-choice">Biranje više slika</option>
+              <option value="hotspot">Hotspot (klik na sliku)</option>
             </select>
           </div>
 
-          <div class="mb-3" v-if="pitanje.type !== 'image'">
+          <!-- Tekst pitanja za sve tipove osim ako nije prazan -->
+          <div class="mb-3" v-if="pitanje.type !== 'truefalse' || true">
             <label class="form-label">Tekst pitanja</label>
             <input v-model="pitanje.question" type="text" class="form-control" required />
           </div>
 
-          <div class="mb-3" v-if="pitanje.type === 'image'">
-            <label class="form-label">Dodaj sliku</label>
-            <input type="file" accept="image/*" class="form-control" @change="handleImageUpload($event, index)" />
-            <div v-if="pitanje.imagePreview" class="mt-2">
-              <img :src="pitanje.imagePreview" class="img-thumbnail" style="max-width: 300px;" />
-            </div>
-          </div>
-
+          <!-- Višestruki i image -->
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
-            <label class="form-label">Odgovori</label>
-            <div v-for="(opcija, i) in pitanje.options" :key="i" class="input-group mb-2">
-              <input v-model="pitanje.options[i]" type="text" class="form-control" />
-              <button type="button" class="btn btn-outline-danger" @click="removeOption(index, i)">🗑</button>
+            <!-- Slika ako je image -->
+            <div v-if="pitanje.type === 'image'" class="mb-3 text-center">
+              <label class="form-label">Dodaj sliku</label>
+              <input type="file" accept="image/*" class="form-control" @change="handleImageUpload($event, idx)" />
+              <div v-if="pitanje.imagePreview" class="mt-2">
+                <img :src="pitanje.imagePreview" class="img-thumbnail" style="max-width:500px;" />
+              </div>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mb-2" @click="addOption(index)">+ Dodaj opciju</button>
 
-            <div class="mb-2">
+            <!-- Opcije -->
+            <label class="form-label">Odgovori</label>
+            <div v-for="(opt, o) in pitanje.options" :key="o" class="input-group mb-2">
+              <input v-model="pitanje.options[o]" type="text" class="form-control" />
+              <button type="button" class="btn btn-outline-danger" @click="removeOption(idx, o)">🗑</button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-3" @click="addOption(idx)">+ Dodaj opciju</button>
+
+            <div>
               <label class="form-label">Točni odgovori</label>
               <select v-model="pitanje.correct" multiple class="form-select">
-                <option v-for="(opcija, i) in pitanje.options" :key="i" :value="opcija">{{ opcija }}</option>
+                <option v-for="(opt, o) in pitanje.options" :key="o" :value="opt">{{ opt }}</option>
               </select>
               <small class="text-muted">Možete odabrati više točnih odgovora</small>
             </div>
           </div>
 
+          <!-- Točno/Netočno -->
           <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
-            <label class="form-label">Točan odgovor</label>
+            <label class="form-label mt-3">Točan odgovor</label>
             <div class="form-check">
-              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="'t' + index" value="T" />
-              <label class="form-check-label" :for="'t' + index">Točno</label>
+              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="`t${idx}`" value="T" />
+              <label class="form-check-label" :for="`t${idx}`">Točno</label>
             </div>
             <div class="form-check">
-              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="'n' + index" value="N" />
-              <label class="form-check-label" :for="'n' + index">Netočno</label>
+              <input v-model="pitanje.correct" class="form-check-input" type="radio" :id="`n${idx}`" value="N" />
+              <label class="form-check-label" :for="`n${idx}`">Netočno</label>
             </div>
           </div>
 
-          <button type="button" class="btn btn-sm btn-danger mt-3" @click="removePitanje(index)">Ukloni pitanje</button>
+          <!-- Image-choice -->
+          <div v-else-if="pitanje.type === 'image-choice'" class="mb-3">
+            <label class="form-label">Dodaj slike kao opcije</label>
+            <input type="file" accept="image/*" multiple class="form-control mb-2" @change="handleImageChoiceUpload($event, idx)" />
+            <div class="d-flex flex-wrap gap-3 mb-2">
+              <img
+                v-for="opt in pitanje.options"
+                :key="opt.value"
+                :src="opt.url"
+                class="img-thumbnail"
+                style="width:120px; cursor:pointer"
+                :class="{ 'border border-success': pitanje.correct.includes(opt.value) }"
+                @click="toggleImageChoice(idx, opt.value)"
+              />
+            </div>
+            <small class="text-muted">Klikom označi ispravne slike</small>
+          </div>
+
+          <!-- Hotspot -->
+          <div v-else-if="pitanje.type === 'hotspot'" class="mb-3">
+            <label class="form-label">Dodaj sliku za hotspot</label>
+            <input type="file" accept="image/*" class="form-control mb-2" @change="handleHotspotImage($event, idx)" />
+            <div v-if="pitanje.imagePreview" class="position-relative d-inline-block" @click="onHotspotClick($event, idx)">
+              <img :src="pitanje.imagePreview" class="img-fluid" style="max-width:500px; cursor:crosshair;" />
+              <div
+                v-for="(hs, h) in pitanje.hotspots"
+                :key="h"
+                class="position-absolute rounded-circle"
+                :style="{
+                  width: hs.r*2 + 'px',
+                  height: hs.r*2 + 'px',
+                  top: hs.y - hs.r + 'px',
+                  left: hs.x - hs.r + 'px',
+                  border: '2px solid red'
+                }"
+              ></div>
+            </div>
+            <small class="text-muted d-block mt-2">Klikom označi svaku točku (hotspot)</small>
+          </div>
+
+          <!-- Uklanjanje pitanja -->
+          <button type="button" class="btn btn-sm btn-danger mt-3" @click="removePitanje(idx)">Ukloni pitanje</button>
         </div>
       </div>
 
+      <!-- Dodaj pitanje + Spremi kviz -->
       <button type="button" class="btn btn-outline-primary mt-2" @click="addPitanje">+ Dodaj pitanje</button>
       <button type="submit" class="btn btn-success w-100 mt-4">✅ Spremi kviz</button>
     </form>
   </div>
 </template>
+
+
 
 <script>
 import axios from 'axios';
@@ -97,54 +151,82 @@ import { ref } from 'vue';
 export default {
   name: 'AddQuiz',
   setup() {
-  const route = useRoute();
-  const router = useRouter();
-  const predmet = route.query.predmet || 'Nepoznato';
+    const route = useRoute();
+    const router = useRouter();
+    const predmet = route.query.predmet || 'Nepoznato';
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const naziv = ref('');
+    const razred = ref('');
+    const maxPokusaja = ref(1);
+    const pitanja = ref([]);
 
-
-  const naziv = ref('');
-  const razred = ref('');
-  const maxPokusaja = ref(1);
-  const pitanja = ref([]);
-
+    // CRUD pitanja/options
     const addPitanje = () => {
       pitanja.value.push({
-        question: '',
         type: 'multiple',
+        question: '',
         options: [''],
         correct: [],
         image: '',
-        imagePreview: ''
+        imagePreview: '',
+        hotspots: []
       });
     };
+    const removePitanje = i => pitanja.value.splice(i, 1);
+    const addOption = (qi) => pitanja.value[qi].options.push('');
+    const removeOption = (qi, oi) => pitanja.value[qi].options.splice(oi, 1);
 
-    const removePitanje = (index) => {
-      pitanja.value.splice(index, 1);
-    };
-
-    const addOption = (qIndex) => {
-      pitanja.value[qIndex].options.push('');
-    };
-
-    const removeOption = (qIndex, oIndex) => {
-      pitanja.value[qIndex].options.splice(oIndex, 1);
-    };
-
-    const handleImageUpload = (event, index) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        pitanja.value[index].image = e.target.result;
-        pitanja.value[index].imagePreview = e.target.result;
-        pitanja.value[index].question = 'Pogledaj sliku i odgovori';
+    // image upload
+    const handleImageUpload = (e, qi) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        pitanja.value[qi].image = ev.target.result;
+        pitanja.value[qi].imagePreview = ev.target.result;
       };
-      reader.readAsDataURL(file);
+      r.readAsDataURL(f);
     };
 
+    // image-choice upload
+    const handleImageChoiceUpload = (e, qi) => {
+      const files = Array.from(e.target.files);
+      pitanja.value[qi].options = files.map((f, i) => {
+        const url = URL.createObjectURL(f);
+        return { url, value: `opt${i}` };
+      });
+      pitanja.value[qi].correct = [];
+    };
+    const toggleImageChoice = (qi, val) => {
+      const arr = pitanja.value[qi].correct;
+      const idx = arr.indexOf(val);
+      if (idx >= 0) arr.splice(idx, 1);
+      else arr.push(val);
+    };
+
+    // hotspot
+    const onHotspotClick = (ev, qi) => {
+      const rect = ev.currentTarget.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const r = 20;
+      pitanja.value[qi].hotspots.push({ x, y, r });
+    };
+   const handleHotspotImage = (e, qi) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    pitanja.value[qi].image = ev.target.result;
+    pitanja.value[qi].imagePreview = ev.target.result;
+    pitanja.value[qi].hotspots = []; // ISPRAVKA
+  };
+  r.readAsDataURL(f);
+};
+
+
+    // spremi kviz
     const spremiKviz = async () => {
       try {
         await axios.post('http://localhost:3001/quizzes', {
@@ -164,122 +246,26 @@ export default {
 
     return {
       naziv,
-      pitanja,
-      predmet,
       razred,
       maxPokusaja,
+      pitanja,
+      predmet,
       addPitanje,
       removePitanje,
       addOption,
       removeOption,
       handleImageUpload,
-      spremiKviz,
-      user
+      handleImageChoiceUpload,
+      toggleImageChoice,
+      onHotspotClick,
+      handleHotspotImage,
+      spremiKviz
     };
   }
 };
 </script>
 
-
-
 <style scoped>
-.container {
-  max-width: 800px;
-}
-.card-title {
-  color: #333;
-}
-</style>
-
-
-
-<style scoped>
-.add-quiz-page {
-  max-width: 800px;
-  margin: auto;
-  padding: 1rem;
-}
-
-.input-title {
-  width: 100%;
-  padding: 0.6rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.pitanje-blok {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f0f9ff;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.input-question {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 0.8rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.odgovor-red {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.input-odgovor {
-  flex: 1;
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.btn-primary {
-  background-color: #3B9A57;
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 1rem;
-}
-
-.btn-secondary {
-  background-color: #0077B6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  margin-right: 0.5rem;
-}
-
-.btn-secondary:hover {
-  background-color: #005f8a;
-}
-
-.btn-remove,
-.btn-remove-pitanje {
-  background: #D9534F;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 0.3rem 0.6rem;
-  cursor: pointer;
-}
-
-.btn-remove-pitanje {
-  margin-top: 0.5rem;
-}
-
-.poruka {
-  margin-top: 1rem;
-  color: green;
-  text-align: center;
-}
+.container { max-width: 800px; }
+.card-title { color: #333; }
 </style>

@@ -12,18 +12,20 @@
 
         <div class="form-group">
           <label for="kod">Kod</label>
-          <input v-model="kod" type="text" id="kod" placeholder="Unesi kod" required />
+          <input v-model="kod" type="password" id="kod" placeholder="Unesi kod" required />
         </div>
 
         <button type="submit">Prijavi se</button>
         <p v-if="error" class="error">{{ error }}</p>
       </form>
 
+      <!-- Novo: Jasna prijava kao učenik/profesor -->
       <p class="switch-mode" @click="toggleMode">
-        {{ isProfesor ? 'Prijava kao učenik' : 'Prijava kao profesor' }}
+        Trenutno se prijavljuješ kao <strong>{{ isProfesor ? 'profesor' : 'učenik' }}</strong>.
+        Klikni za prijavu kao {{ isProfesor ? 'učenik' : 'profesor' }}.
       </p>
 
-      <!-- Novi dodatak za admin login -->
+      <!-- Admin login -->
       <p class="admin-login" @click="goToAdminLogin">
         🔐 Prijava kao admin
       </p>
@@ -54,7 +56,6 @@ export default {
 
         const response = await axios.post(url, { kod: kod.value });
 
-        // 🔁 Promjena OVDJE:
         const korisnik = isProfesor.value ? response.data.profesor : response.data.student;
 
         if (!korisnik?.id) {
@@ -85,7 +86,7 @@ export default {
     };
 
     const goToAdminLogin = () => {
-      router.push('/admin-login');
+      router.push({ name: 'AdminLogin' });
     };
 
     return {
@@ -100,7 +101,6 @@ export default {
   }
 };
 </script>
-
 
 
 <style scoped>
