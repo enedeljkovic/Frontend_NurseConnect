@@ -14,7 +14,7 @@
       <p><strong>Prezime:</strong> {{ user?.prezime || 'N/A' }}</p>
     </div>
 
-    <router-link to="/settings" class="settings-link">⚙️ Postavke profila</router-link>
+    
   </div>
 </template>
 

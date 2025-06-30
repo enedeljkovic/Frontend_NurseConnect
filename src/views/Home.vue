@@ -17,7 +17,6 @@
       </div>
     </section>
 
-    <!-- UČENIK: Napredak -->
     <section v-if="!isProfesor" class="progress-section">
       <h2>Napredak</h2>
 
@@ -38,7 +37,6 @@
       </div>
     </section>
 
-    <!-- PROFESOR: Kratka statistika kvizova -->
     <section v-if="isProfesor" class="profesor-statistika">
       <h2>Statistika kvizova</h2>
       <div class="stat-grid">
@@ -87,7 +85,6 @@ const isProfesor = localStorage.getItem('isProfesor') === 'true'
 const user       = JSON.parse(localStorage.getItem('user') || '{}')
 const mojRazred  = user.razred
 
-// --- Napredak učenika ---
 const sviMaterijali       = ref([])
 const procitaniMaterijali = ref([])
 const procentMaterijala   = ref(0)
@@ -95,12 +92,11 @@ const sviKvizovi          = ref([])
 const rijeseniKvizovi     = ref([])
 const procentKvizova      = ref(0)
 
-// --- Statistika profesora ---
 const brojKvizova  = ref(0)
 const brojPokusaja = ref(0)
 const prosjek      = ref(0)
 
-// Kartice za navigaciju
+
 const karticeUcenik = [
   { label: 'Profil',     route: 'profile',        icon: 'fas fa-user' },
   { label: 'Materijali', route: 'materials',      icon: 'fas fa-book' },
@@ -113,7 +109,7 @@ const karticeProfesor = [
 ]
 const prikazaneKartice = isProfesor ? karticeProfesor : karticeUcenik
 
-// funkcija koja dohvati i izračuna sve postotke
+
 async function fetchProgress() {
   const [resM, resQ, resP] = await Promise.all([
     axios.get('http://localhost:3001/materials'),
@@ -121,7 +117,7 @@ async function fetchProgress() {
     axios.get(`http://localhost:3001/api/v1/progress/${user.id}`)
   ])
 
-  // materijali
+  
   sviMaterijali.value = resM.data.filter(m => m.razred === mojRazred)
   procitaniMaterijali.value = sviMaterijali.value.filter(m =>
     resP.data.readMaterialIds.includes(m.id)
@@ -130,7 +126,7 @@ async function fetchProgress() {
     ? Math.round(procitaniMaterijali.value.length / sviMaterijali.value.length * 100)
     : 0
 
-  // kvizovi
+  
   sviKvizovi.value = resQ.data.filter(k => k.razred === mojRazred)
   rijeseniKvizovi.value = sviKvizovi.value.filter(k =>
     resP.data.solvedQuizIds.includes(k.id)
@@ -138,27 +134,29 @@ async function fetchProgress() {
   procentKvizova.value = sviKvizovi.value.length
     ? Math.round(rijeseniKvizovi.value.length / sviKvizovi.value.length * 100)
     : 0
+
+  
+  if (isProfesor) {
+    const resStat = await axios.get(`http://localhost:3001/profesori/${user.id}/quiz-statistics`)
+    const podaci = resStat.data
+
+    brojKvizova.value  = podaci.length
+    brojPokusaja.value = podaci.reduce((sum, q) => sum + q.brojPokusaja, 0)
+    const ukupanProsjek = podaci.reduce((sum, q) => sum + (q.prosjek || 0), 0)
+    prosjek.value = podaci.length > 0 ? Math.round(ukupanProsjek / podaci.length) : 0
+  }
 }
 
-// handler za event
+
 function onProgressUpdated() {
   fetchProgress().catch(err => console.error('Greška pri osvježavanju napretka:', err))
 }
 
-// montaža
+
 onMounted(() => {
+  fetchProgress().catch(err => console.error('Greška pri dohvaćanju podataka:', err))
   if (!isProfesor) {
-    fetchProgress().catch(err => console.error('Greška pri dohvaćanju napretka:', err))
     window.addEventListener('progress-updated', onProgressUpdated)
-  } else {
-    // profesor: samo statistika kvizova
-    axios.get(`http://localhost:3001/api/v1/professor/${user.id}/quiz-summary`)
-      .then(({ data }) => {
-        brojKvizova.value  = data.totalQuizzes
-        brojPokusaja.value = data.totalAttempts
-        prosjek.value       = data.avgScore
-      })
-      .catch(err => console.error('Greška pri dohvaćanju statistike kvizova:', err))
   }
 })
 
@@ -170,11 +168,11 @@ function confirmLogout() {
 }
 
 
-// čišćenje listenera
 onBeforeUnmount(() => {
   window.removeEventListener('progress-updated', onProgressUpdated)
 })
 </script>
+
 
 
 

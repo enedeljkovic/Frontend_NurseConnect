@@ -3,11 +3,11 @@
     <h2>📊 Detaljna statistika kvizova</h2>
 
     <div v-for="quiz in kvizovi" :key="quiz.id" class="quiz-card">
-      <h3>{{ quiz.naziv }} ({{ quiz.razred }})</h3>
+      <h3 class="quiz-title">{{ quiz.naziv }} ({{ quiz.razred }})</h3>
       <p><strong>Ukupno pokušaja:</strong> {{ quiz.pokusaji.length }}</p>
       <p><strong>Prosjek točnosti:</strong> {{ quiz.prosjek }}%</p>
 
-      <table v-if="quiz.pokusaji.length > 0">
+      <table v-if="quiz.pokusaji.length > 0" class="quiz-table">
         <thead>
           <tr>
             <th>Ime učenika</th>
@@ -19,13 +19,13 @@
         <tbody>
           <tr v-for="pokusaj in quiz.pokusaji" :key="pokusaj.id">
             <td>{{ pokusaj.student.ime }} {{ pokusaj.student.prezime }}</td>
-            <td>{{ pokusaj.correct }}</td>
-            <td>{{ pokusaj.total - pokusaj.correct }}</td>
+            <td>{{ pokusaj.result }}</td>
+            <td>{{ pokusaj.total - pokusaj.result }}</td>
             <td>{{ new Date(pokusaj.solvedAt).toLocaleDateString() }}</td>
           </tr>
         </tbody>
       </table>
-      <p v-else>Nema riješenih pokušaja.</p>
+      <p v-else class="no-attempts">Nema riješenih pokušaja.</p>
     </div>
   </div>
 </template>
@@ -42,7 +42,6 @@ onMounted(async () => {
     const res = await axios.get(`http://localhost:3001/profesori/${user.id}/quiz-statistics`);
     const summary = res.data;
 
-    // Dohvati detalje za svaki kviz
     const detalji = await Promise.all(
       summary.map(async (kviz) => {
         const detaljiRes = await axios.get(`http://localhost:3001/api/v1/quiz/${kviz.id}/detalji`);
@@ -62,40 +61,52 @@ onMounted(async () => {
 
 <style scoped>
 .statistika-container {
-  max-width: 1000px;
-  margin: 2rem auto;
+  max-width: 900px;
+  margin: 0 auto;
   padding: 2rem;
-  background: #f9fdfc;
-  border-radius: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background-color: #f9ffff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.1);
 }
 
 .quiz-card {
   background: white;
-  border-radius: 1rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  border-left: 5px solid #0077cc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.quiz-card h3 {
+.quiz-title {
+  color: #0077cc;
   margin-bottom: 0.5rem;
-  color: #0077B6;
 }
 
-table {
+.quiz-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
 }
 
-th, td {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
+.quiz-table th,
+.quiz-table td {
+  border: 1px solid #ccc;
+  padding: 0.75rem;
   text-align: left;
 }
 
-th {
-  background-color: #f0f0f0;
+.quiz-table th {
+  background-color: #e6f2ff;
+}
+
+.quiz-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.no-attempts {
+  color: #888;
+  margin-top: 1rem;
+  font-style: italic;
 }
 </style>

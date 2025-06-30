@@ -4,7 +4,6 @@
     <h5 class="mb-4 text-muted">Predmet: {{ predmet }}</h5>
 
     <form @submit.prevent="spremiKviz">
-      <!-- Opći podaci -->
       <div class="mb-3">
         <label class="form-label">Naziv kviza</label>
         <input v-model="naziv" type="text" class="form-control" placeholder="Npr. Anatomija 1" required />
@@ -25,12 +24,10 @@
         <input v-model.number="maxPokusaja" type="number" min="1" class="form-control" required />
       </div>
 
-      <!-- Pitanja -->
       <div v-for="(pitanje, idx) in pitanja" :key="idx" class="card mb-4 shadow-sm">
         <div class="card-body">
           <h5 class="card-title">Pitanje {{ idx + 1 }}</h5>
 
-          <!-- Tip pitanja -->
           <div class="mb-3">
             <label class="form-label">Vrsta pitanja</label>
             <select v-model="pitanje.type" class="form-select">
@@ -42,15 +39,12 @@
             </select>
           </div>
 
-          <!-- Tekst pitanja za sve tipove osim ako nije prazan -->
           <div class="mb-3" v-if="pitanje.type !== 'truefalse' || true">
             <label class="form-label">Tekst pitanja</label>
             <input v-model="pitanje.question" type="text" class="form-control" required />
           </div>
 
-          <!-- Višestruki i image -->
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
-            <!-- Slika ako je image -->
             <div v-if="pitanje.type === 'image'" class="mb-3 text-center">
               <label class="form-label">Dodaj sliku</label>
               <input type="file" accept="image/*" class="form-control" @change="handleImageUpload($event, idx)" />
@@ -59,7 +53,6 @@
               </div>
             </div>
 
-            <!-- Opcije -->
             <label class="form-label">Odgovori</label>
             <div v-for="(opt, o) in pitanje.options" :key="o" class="input-group mb-2">
               <input v-model="pitanje.options[o]" type="text" class="form-control" />
@@ -76,7 +69,6 @@
             </div>
           </div>
 
-          <!-- Točno/Netočno -->
           <div v-else-if="pitanje.type === 'truefalse'" class="mb-3">
             <label class="form-label mt-3">Točan odgovor</label>
             <div class="form-check">
@@ -89,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Image-choice -->
           <div v-else-if="pitanje.type === 'image-choice'" class="mb-3">
             <label class="form-label">Dodaj slike kao opcije</label>
             <input type="file" accept="image/*" multiple class="form-control mb-2" @change="handleImageChoiceUpload($event, idx)" />
@@ -107,7 +98,6 @@
             <small class="text-muted">Klikom označi ispravne slike</small>
           </div>
 
-          <!-- Hotspot -->
           <div v-else-if="pitanje.type === 'hotspot'" class="mb-3">
             <label class="form-label">Dodaj sliku za hotspot</label>
             <input type="file" accept="image/*" class="form-control mb-2" @change="handleHotspotImage($event, idx)" />
@@ -129,12 +119,10 @@
             <small class="text-muted d-block mt-2">Klikom označi svaku točku (hotspot)</small>
           </div>
 
-          <!-- Uklanjanje pitanja -->
           <button type="button" class="btn btn-sm btn-danger mt-3" @click="removePitanje(idx)">Ukloni pitanje</button>
         </div>
       </div>
 
-      <!-- Dodaj pitanje + Spremi kviz -->
       <button type="button" class="btn btn-outline-primary mt-2" @click="addPitanje">+ Dodaj pitanje</button>
       <button type="submit" class="btn btn-success w-100 mt-4">✅ Spremi kviz</button>
     </form>
@@ -161,7 +149,6 @@ export default {
     const maxPokusaja = ref(1);
     const pitanja = ref([]);
 
-    // CRUD pitanja/options
     const addPitanje = () => {
       pitanja.value.push({
         type: 'multiple',
@@ -177,7 +164,6 @@ export default {
     const addOption = (qi) => pitanja.value[qi].options.push('');
     const removeOption = (qi, oi) => pitanja.value[qi].options.splice(oi, 1);
 
-    // image upload
     const handleImageUpload = (e, qi) => {
       const f = e.target.files[0];
       if (!f) return;
@@ -189,15 +175,25 @@ export default {
       r.readAsDataURL(f);
     };
 
-    // image-choice upload
-    const handleImageChoiceUpload = (e, qi) => {
-      const files = Array.from(e.target.files);
-      pitanja.value[qi].options = files.map((f, i) => {
-        const url = URL.createObjectURL(f);
-        return { url, value: `opt${i}` };
+    const handleImageChoiceUpload = async (e, qi) => {
+  const files = Array.from(e.target.files);
+  pitanja.value[qi].options = [];
+  pitanja.value[qi].correct = [];
+
+  for (const [i, f] of files.entries()) {
+    const formData = new FormData();
+    formData.append('file', f);
+
+    try {
+      const res = await axios.post('http://localhost:3001/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      pitanja.value[qi].correct = [];
-    };
+      pitanja.value[qi].options.push({ url: res.data.fileUrl, value: `opt${i}` });
+    } catch (err) {
+      console.error('Greška pri uploadu slike:', err);
+    }
+  }
+};
     const toggleImageChoice = (qi, val) => {
       const arr = pitanja.value[qi].correct;
       const idx = arr.indexOf(val);

@@ -1,5 +1,12 @@
 <template>
   <div class="container my-5">
+    <!-- Natrag gumb na vrhu stranice -->
+    <div class="text-start mb-3">
+      <router-link to="/home" class="btn btn-outline-primary">
+        ⬅ Natrag na početnu stranicu
+      </router-link>
+    </div>
+
     <h2 class="text-center mb-5 text-primary">🧠 Kvizovi po predmetima</h2>
 
     <!-- Odabir predmeta -->
@@ -32,9 +39,7 @@
           >
             + Dodaj kviz
           </button>
-          <button class="btn btn-outline-secondary" @click="selectedSubject = null">
-            ⬅ Natrag
-          </button>
+          
         </div>
       </div>
 
@@ -51,22 +56,22 @@
                 <p class="text-muted">{{ quiz.pitanja.length }} pitanja</p>
                 <p class="text-muted"><strong>Razred:</strong> {{ quiz.razred }}</p>
               </div>
+
               <button
-  v-if="!isProfesor"
-  class="btn btn-outline-success mt-3"
-  @click="goToQuiz(quiz.id)"
->
-  {{ solvedQuizzes[quiz.id] ? '👁 Pogledaj riješeni kviz' : '▶ Riješi kviz' }}
-</button>
+                v-if="!isProfesor"
+                class="btn btn-outline-success mt-3"
+                @click="goToQuiz(quiz.id)"
+              >
+                {{ solvedQuizzes[quiz.id] ? '👁 Pogledaj riješeni kviz' : '▶ Riješi kviz' }}
+              </button>
 
-
-<button
-  v-else
-  class="btn btn-outline-info mt-3"
-  @click="goToQuiz(quiz.id)"
->
-  👁 Pregled pitanja
-</button>
+              <button
+                v-else
+                class="btn btn-outline-info mt-3"
+                @click="goToQuiz(quiz.id)"
+              >
+                👁 Pregled pitanja
+              </button>
             </div>
           </div>
         </div>
@@ -74,6 +79,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';

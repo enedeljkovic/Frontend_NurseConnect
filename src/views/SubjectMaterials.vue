@@ -1,26 +1,42 @@
 <template>
   <div class="container my-5">
-    <!-- …ostatak template-a… -->
-    <div v-for="m in materijali" :key="m.id" class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title">{{ m.naziv }}</h5>
-          <p class="card-text">{{ m.opis }}</p>
-          <p class="text-muted"><strong>Razred:</strong> {{ m.razred }}</p>
-          <!-- prije je ovdje bio <a>, sad je button: -->
-          <button
-            v-if="m.fileUrl"
-            class="btn btn-sm btn-outline-primary"
-            @click="downloadAndMarkRead(m)"
-          >
-            📎 Preuzmi datoteku
-          </button>
+    <!-- Gumb za povratak -->
+    <div class="text-start mb-3">
+      <router-link to="/materials" class="btn btn-outline-primary">
+        ⬅ Natrag na početnu stranicu
+      </router-link>
+    </div>
+
+    <!-- Naslov predmeta -->
+    <h2 class="text-success mb-4">{{ selectedSubject }}</h2>
+
+    <!-- Ako nema materijala -->
+    <div v-if="materijali.length === 0" class="alert alert-warning text-center">
+      📭 Nema materijala za ovaj predmet.
+    </div>
+
+    <!-- Lista materijala -->
+    <div class="row g-4" v-else>
+      <div v-for="m in materijali" :key="m.id" class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ m.naziv }}</h5>
+            <p class="card-text">{{ m.opis }}</p>
+            <p class="text-muted"><strong>Razred:</strong> {{ m.razred }}</p>
+            <button
+              v-if="m.fileUrl"
+              class="btn btn-sm btn-outline-primary"
+              @click="downloadAndMarkRead(m)"
+            >
+              📎 Preuzmi datoteku
+            </button>
+          </div>
         </div>
       </div>
     </div>
-    <!-- …ostatak template-a… -->
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -50,16 +66,13 @@ async function checkDozvola() {
 
 async function downloadAndMarkRead(m) {
   try {
-    // 1) pošalji POST da se zapiše u ReadMaterials
     await axios.post(
       `http://localhost:3001/api/v1/progress/${user.id}/read/${m.id}`
     )
     console.log('✓ Obeleženo kao pročitano:', m.id)
 
-    // 2) obavijesti Home.vue da osvježi napredak
     window.dispatchEvent(new CustomEvent('progress-updated'))
 
-    // 3) na kraju otvori PDF/tab
     window.open(m.fileUrl, '_blank')
 
   } catch (err) {

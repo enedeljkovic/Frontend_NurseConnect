@@ -2,7 +2,6 @@
   <div class="container my-5">
     <h2 class="mb-4 text-primary text-center">📬 Chat s profesorima</h2>
 
-    <!-- Odabir primatelja -->
     <div class="mb-4">
       <label class="form-label">Odaberi profesora:</label>
       <select v-model="selectedRecipientId" class="form-select" @change="fetchMessages">
@@ -18,7 +17,6 @@
       </select>
     </div>
 
-    <!-- Chat poruke -->
     <div class="chat-box mb-3 p-3 rounded shadow-sm">
       <div
         v-for="msg in messages"
@@ -30,7 +28,6 @@
       </div>
     </div>
 
-    <!-- Slanje poruke -->
     <div class="input-group">
       <input
         v-model="newMessage"
@@ -74,7 +71,6 @@ export default {
     const fetchMessages = async () => {
       if (!selectedRecipientId.value) return;
 
-      // Označi kao pročitano
       await axios.post('http://localhost:3001/messages/mark-read', {
         senderId: selectedRecipientId.value,
         receiverId: currentUserId

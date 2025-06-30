@@ -47,7 +47,7 @@ export default {
         kvizovi.value = res.data;
         const sviPredmeti = res.data
           .map(k => k.predmet)
-          .filter(p => p && p !== ''); // Ukloni null i prazne
+          .filter(p => p && p !== ''); 
         predmeti.value = [...new Set(sviPredmeti)];
       } catch (err) {
         console.error('Greška pri dohvaćanju kvizova:', err);

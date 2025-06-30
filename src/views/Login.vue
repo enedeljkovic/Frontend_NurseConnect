@@ -19,13 +19,11 @@
         <p v-if="error" class="error">{{ error }}</p>
       </form>
 
-      <!-- Novo: Jasna prijava kao učenik/profesor -->
       <p class="switch-mode" @click="toggleMode">
         Trenutno se prijavljuješ kao <strong>{{ isProfesor ? 'profesor' : 'učenik' }}</strong>.
         Klikni za prijavu kao {{ isProfesor ? 'učenik' : 'profesor' }}.
       </p>
 
-      <!-- Admin login -->
       <p class="admin-login" @click="goToAdminLogin">
         🔐 Prijava kao admin
       </p>

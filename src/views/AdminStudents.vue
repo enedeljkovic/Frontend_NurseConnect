@@ -4,7 +4,7 @@
 
     <div class="card shadow p-4 mb-5">
       <h4 class="mb-3">➕ Dodaj novog studenta</h4>
-      <form @submit.prevent="dodajStudenta">
+      <form @submit.prevent="dodajIliAzurirajStudenta">
         <div class="row g-3">
           <div class="col-md-3">
             <input v-model="noviStudent.ime" type="text" class="form-control" placeholder="Ime" required />
@@ -25,7 +25,9 @@
           </div>
         </div>
         <div class="mt-3 d-flex justify-content-between align-items-center">
-          <button type="submit" class="btn btn-success">✅ Dodaj</button>
+          <button type="submit" class="btn btn-success">
+            {{ noviStudent.id ? '💾 Spremi promjene' : '✅ Dodaj' }}
+          </button>
           <span class="text-success">{{ poruka }}</span>
         </div>
       </form>
@@ -52,6 +54,7 @@
             <td>{{ student.razred }}</td>
             <td>{{ student.kod }}</td>
             <td>
+              <button class="btn btn-primary btn-sm me-2" @click="urediStudenta(student)">✏️ Uredi</button>
               <button class="btn btn-danger btn-sm" @click="obrisiStudenta(student.id)">🗑️ Obriši</button>
             </td>
           </tr>
@@ -70,8 +73,8 @@ export default {
   name: 'AdminStudents',
   setup() {
     const studenti = ref([]);
-    const noviStudent = ref({ ime: '', prezime: '', email: '', razred: '' });
     const poruka = ref('');
+    const noviStudent = ref({ ime: '', prezime: '', email: '', razred: '' });
 
     const ucitajStudente = async () => {
       try {
@@ -82,18 +85,26 @@ export default {
       }
     };
 
-    const dodajStudenta = async () => {
-      if (!noviStudent.value.ime || !noviStudent.value.prezime || !noviStudent.value.email || !noviStudent.value.razred) return;
-
+    const dodajIliAzurirajStudenta = async () => {
       try {
-        await axios.post('http://localhost:3001/students', noviStudent.value);
-        poruka.value = 'Student uspješno dodan!';
+        if (noviStudent.value.id) {
+          await axios.put(`http://localhost:3001/students/${noviStudent.value.id}`, noviStudent.value);
+          poruka.value = 'Promjene spremljene!';
+        } else {
+          await axios.post('http://localhost:3001/students', noviStudent.value);
+          poruka.value = 'Student uspješno dodan!';
+        }
+
         noviStudent.value = { ime: '', prezime: '', email: '', razred: '' };
         ucitajStudente();
       } catch (err) {
-        console.error('Greška kod dodavanja:', err);
-        poruka.value = 'Greška prilikom dodavanja.';
+        console.error('Greška kod dodavanja ili ažuriranja:', err);
+        poruka.value = 'Greška prilikom spremanja.';
       }
+    };
+
+    const urediStudenta = (student) => {
+      noviStudent.value = { ...student }; // kopija
     };
 
     const obrisiStudenta = async (id) => {
@@ -107,11 +118,10 @@ export default {
 
     onMounted(ucitajStudente);
 
-    return { studenti, noviStudent, poruka, dodajStudenta, obrisiStudenta };
+    return { studenti, noviStudent, poruka, dodajIliAzurirajStudenta, obrisiStudenta, urediStudenta };
   }
 };
 </script>
-
 
 <style scoped>
 .card {

@@ -1,8 +1,10 @@
 <template>
   <div class="materials-page">
-    <router-link to="/home" class="back-button">
-      <span class="back-icon">←</span> Natrag na početnu stranicu
-    </router-link>
+    <div class="text-start mb-3">
+      <router-link to="/home" class="btn btn-outline-primary">
+        ⬅ Natrag na početnu stranicu
+      </router-link>
+    </div>
     <h2 class="section-title">📚 Odaberi predmet za pregled materijala</h2>
 
     <div class="subject-grid">

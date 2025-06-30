@@ -45,7 +45,9 @@ export default {
         });
 
         const admin = res.data.admin;
-        localStorage.setItem('adminToken', res.data.token);
+        localStorage.setItem('user', JSON.stringify({ id: 'admin', role: 'admin' }));
+localStorage.setItem('adminToken', res.data.token);
+
         router.push('/admin-panel');
       } catch (err) {
         error.value = err.response?.data?.error || 'Greška prilikom prijave.';

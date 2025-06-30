@@ -3,7 +3,6 @@
     <div v-if="quiz" class="card shadow p-4">
       <h2 class="mb-4 text-primary">{{ quiz.naziv }}</h2>
 
-      <!-- Ako je profesor -->
       <div v-if="isProfesor">
         <h4 class="text-info">👨‍🏫 Pregled kviza za profesore</h4>
         <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4">
@@ -29,7 +28,6 @@
         </div>
       </div>
 
-      <!-- Ako je student i već je riješio -->
       <div v-else-if="alreadySolved && rezultat.length">
         <h4 class="text-success">✅ Već si riješio ovaj kviz!</h4>
         <p class="fw-bold">
@@ -54,14 +52,12 @@
         </div>
       </div>
 
-      <!-- Ako je student i još nije riješio -->
       <form v-else @submit.prevent="submitAnswers">
         <div v-for="(pitanje, index) in quiz.pitanja" :key="index" class="mb-4 border rounded p-3">
           <p class="fw-bold">{{ index + 1 }}. {{ pitanje.question }}</p>
 
           
 
-          <!-- Višestruki odabir -->
           <div v-if="pitanje.type === 'multiple' || pitanje.type === 'image'">
             <div v-for="(opcija, i) in pitanje.options" :key="i" class="form-check">
               <input class="form-check-input" type="checkbox" :value="opcija" v-model="odgovori[index]" />
@@ -69,7 +65,6 @@
             </div>
           </div>
 
-          <!-- Točno/Netočno -->
           <div v-else-if="pitanje.type === 'truefalse'">
             <div class="form-check">
               <input class="form-check-input" type="radio" :value="'T'" v-model="odgovori[index]" />
@@ -81,7 +76,6 @@
             </div>
           </div>
 
-          <!-- Slike kao odgovori -->
           <div v-else-if="pitanje.type === 'image-choice'">
             <div class="d-flex gap-2 flex-wrap">
               <img
@@ -96,7 +90,6 @@
             </div>
           </div>
 
-  <!-- Hotspot (klik na sliku) -->
 <div v-else-if="pitanje.type === 'hotspot' && pitanje.image">
   <div
     class="position-relative d-inline-block"

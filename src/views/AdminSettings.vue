@@ -4,7 +4,6 @@
 
     <div class="row g-4">
 
-      <!-- Promjena lozinke -->
       <div class="col-md-6">
         <div class="card p-4 shadow-sm h-100">
           <h5 class="text-secondary mb-3">🔐 Promjena lozinke</h5>
